@@ -330,6 +330,42 @@
             transition: color 0.12s, border-color 0.12s;
         }
         #edit-btn:hover { color: #888; border-color: #333; }
+
+        /* ══════════════════════════════════════
+           COUNTDOWN OVERLAY
+        ══════════════════════════════════════ */
+        #tp-countdown {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        #tp-countdown.active { display: flex; }
+        #countdown-num {
+            font-size: 10rem;
+            font-weight: 900;
+            color: #ffdd00;
+            line-height: 1;
+            filter: drop-shadow(0 0 60px rgba(255, 221, 0, 0.5));
+            animation: cd-pop 1s ease-out forwards;
+        }
+        #countdown-label {
+            font-size: 0.8rem;
+            letter-spacing: 6px;
+            color: #444;
+            text-transform: uppercase;
+            margin-top: 18px;
+        }
+        @keyframes cd-pop {
+            0%   { transform: scale(1.4); opacity: 0; }
+            15%  { transform: scale(1.0); opacity: 1; }
+            75%  { transform: scale(1.0); opacity: 1; }
+            100% { transform: scale(0.7); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -413,11 +449,19 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     </div>
 </div>
 
+<!-- ════════════════════════════════════════
+     COUNTDOWN OVERLAY
+════════════════════════════════════════ -->
+<div id="tp-countdown">
+    <div id="countdown-num">5</div>
+    <div id="countdown-label">Starting in…</div>
+</div>
+
 <script>
 (function () {
     'use strict';
 
-    const SPD     = { 1: 22, 2: 52, 3: 90, 4: 148, 5: 218 };
+    const SPD     = { 1: 22, 2: 39, 3: 57, 4: 74, 5: 90 };
     const READ_Y  = 0.30;
     const JUMP    = 80;
     const SZ_STEP = 0.3;
@@ -431,6 +475,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let rafId    = null;
     let lastTs   = null;
     let rDrag = false, rX0, rY0, rW0, rH0;
+    let cdTimeout = null;
 
     const $ = id => document.getElementById(id);
     const inputScr = $('input-screen');
@@ -443,6 +488,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     const ppBtn    = $('pp-btn');
     const progress = $('tp-progress');
     const resizeH  = $('tp-resize');
+    const cdOverlay = $('tp-countdown');
+    const cdNum     = $('countdown-num');
 
     $('start-btn').addEventListener('click', enterTP);
     $('edit-btn').addEventListener('click', exitTP);
@@ -464,7 +511,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         tpText.textContent = src;
         tpText.style.fontSize = fontSize + 'rem';
         scroll  = 0;
-        playing = true;
+        playing = false;
         inputScr.style.display = 'none';
         tpScr.style.display    = 'flex';
         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -472,10 +519,40 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             render();
             syncPP();
             startRaf();
+            startCountdown();
         }));
     }
 
+    function startCountdown() {
+        let n = 5;
+        cdNum.textContent = n;
+        cdOverlay.classList.add('active');
+        function tick() {
+            n--;
+            if (n <= 0) {
+                cdOverlay.classList.remove('active');
+                playing = true;
+                lastTs = null;
+                syncPP();
+                return;
+            }
+            cdNum.textContent = n;
+            /* restart the pop animation */
+            cdNum.style.animation = 'none';
+            cdNum.offsetHeight; /* reflow */
+            cdNum.style.animation = '';
+            cdTimeout = setTimeout(tick, 1000);
+        }
+        cdTimeout = setTimeout(tick, 1000);
+    }
+
+    function cancelCountdown() {
+        if (cdTimeout) { clearTimeout(cdTimeout); cdTimeout = null; }
+        cdOverlay.classList.remove('active');
+    }
+
     function exitTP() {
+        cancelCountdown();
         stopRaf();
         playing = false;
         tpScr.style.display    = 'none';
@@ -545,7 +622,11 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         if (tpScr.style.display === 'none') return;
         if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
         switch (e.key) {
-            case ' ':         e.preventDefault(); togglePlay(); break;
+            case ' ':
+                e.preventDefault();
+                if (cdOverlay.classList.contains('active')) { cancelCountdown(); playing = true; lastTs = null; syncPP(); }
+                else togglePlay();
+                break;
             case 'ArrowDown': e.preventDefault(); scroll += JUMP; break;
             case 'ArrowUp':   e.preventDefault(); scroll = Math.max(0, scroll - JUMP); break;
             case '1': case '2': case '3': case '4': case '5': setSpeed(+e.key); break;
