@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ══════════════════════════════════════
+           INPUT SCREEN
+        ══════════════════════════════════════ */
+        #input-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 40px 20px;
+            background: #0c0c0c;
+        }
+
+        .brand {
+            font-size: 0.72rem;
+            letter-spacing: 10px;
+            color: #ffdd00;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        #input-screen h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        #input-screen .sub {
+            font-size: 0.82rem;
+            color: #3a3a3a;
+            margin-bottom: 28px;
+        }
+
+        #script-input {
+            width: min(820px, 100%);
+            height: 360px;
+            background: #121212;
+            border: 2px solid #252525;
+            border-radius: 12px;
+            color: #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1.7;
+            padding: 22px 26px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #script-input:focus      { border-color: #ffdd00; }
+        #script-input::placeholder { color: #2c2c2c; }
+
+        #start-btn {
+            margin-top: 22px;
+            padding: 15px 52px;
+            background: #ffdd00;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.2s, transform 0.15s;
+        }
+        #start-btn:hover {
+            background: #ffe62b;
+            box-shadow: 0 0 40px rgba(255, 221, 0, 0.22);
+            transform: translateY(-2px);
+        }
+
+        .key-hints {
+            display: flex;
+            gap: 22px;
+            margin-top: 16px;
+            color: #252525;
+            font-size: 0.72rem;
+        }
+        .key-hints kbd {
+            background: #181818;
+            border: 1px solid #252525;
+            border-radius: 3px;
+            padding: 1px 6px;
+            color: #383838;
+            font-family: Arial, sans-serif;
+            margin-right: 3px;
+        }
+
+        /* ══════════════════════════════════════
+           TELEPROMPTER SCREEN
+        ══════════════════════════════════════ */
+        #tp-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000;
+            flex-direction: column;
+        }
+
+        #tp-stage {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 70px;
+            overflow: hidden;
+        }
+
+        /* Outer frame — sized to the viewport */
+        #tp-frame {
+            position: relative;
+        }
+
+        /* Arrow indicator */
+        #tp-arrow {
+            position: absolute;
+            left: -58px;
+            color: #ffdd00;
+            font-size: 2.4rem;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 30;
+            filter: drop-shadow(0 0 12px rgba(255, 221, 0, 0.55));
+            /* top + transform set by JS */
+        }
+
+        /* Scrollable viewport window */
+        #tp-vp {
+            width: 800px;
+            height: 500px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Gradient masks — fade text into black at edges */
+        #tp-vp::before,
+        #tp-vp::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+        #tp-vp::before {
+            top: 0;
+            height: 140px;
+            background: linear-gradient(to bottom, #000 15%, transparent);
+        }
+        #tp-vp::after {
+            bottom: 0;
+            height: 140px;
+            background: linear-gradient(to top, #000 15%, transparent);
+        }
+
+        /* Subtle reading-line highlight */
+        #tp-line {
+            position: absolute;
+            left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(
+                to right,
+                transparent 0%,
+                rgba(255, 221, 0, 0.07) 20%,
+                rgba(255, 221, 0, 0.13) 50%,
+                rgba(255, 221, 0, 0.07) 80%,
+                transparent 100%
+            );
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        /* The scrolling text */
+        #tp-text {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 0 36px 65vh;
+            font-family: Arial, sans-serif;
+            font-size: 2.2rem;
+            line-height: 1.65;
+            color: #ffdd00;
+            white-space: pre-wrap;
+            word-break: break-word;
+            will-change: transform;
+        }
+
+        /* Corner resize handle */
+        #tp-resize {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 26px; height: 26px;
+            cursor: se-resize;
+            z-index: 30;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        #tp-resize:hover { opacity: 1; }
+
+        /* Progress bar along bottom edge of viewport */
+        #tp-progress {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 2px;
+            width: 0%;
+            background: #ffdd00;
+            opacity: 0.35;
+            z-index: 40;
+            pointer-events: none;
+        }
+
+        /* ══════════════════════════════════════
+           CONTROLS BAR
+        ══════════════════════════════════════ */
+        #tp-bar {
+            background: #080808;
+            border-top: 1px solid #131313;
+            padding: 11px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .bar-sep { width: 1px; height: 24px; background: #1c1c1c; flex-shrink: 0; }
+
+        .bar-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .bar-lbl {
+            font-size: 0.62rem;
+            letter-spacing: 1.5px;
+            color: #2e2e2e;
+            text-transform: uppercase;
+            margin-right: 2px;
+        }
+
+        .spd-btn {
+            width: 34px; height: 32px;
+            background: #131313;
+            border: 1px solid #1f1f1f;
+            border-radius: 5px;
+            color: #484848;
+            font-family: Arial, sans-serif;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+        .spd-btn:hover { background: #1d1d1d; color: #777; }
+        .spd-btn.sel   { background: #ffdd00; border-color: #ffdd00; color: #000; }
+
+        .icon-btn {
+            padding: 6px 13px;
+            background: #131313;
+            border: 1px solid #1f1f1f;
+            border-radius: 5px;
+            color: #484848;
+            font-family: Arial, sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+        .icon-btn:hover { background: #1d1d1d; color: #999; }
+
+        #pp-btn {
+            padding: 9px 30px;
+            background: #ffdd00;
+            border: none;
+            border-radius: 7px;
+            color: #000;
+            font-family: Arial, sans-serif;
+            font-size: 0.85rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.12s;
+            white-space: nowrap;
+        }
+        #pp-btn:hover   { background: #ffe83a; }
+        #pp-btn.paused  {
+            background: #111;
+            color: #ffdd00;
+            border: 1px solid #ffdd00;
+        }
+
+        .bar-hints {
+            font-size: 0.66rem;
+            color: #1e1e1e;
+            display: flex;
+            gap: 16px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        #edit-btn {
+            position: absolute;
+            right: 16px;
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid #1c1c1c;
+            border-radius: 5px;
+            color: #2e2e2e;
+            font-family: Arial, sans-serif;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: color 0.12s, border-color 0.12s;
+        }
+        #edit-btn:hover { color: #888; border-color: #333; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     INPUT SCREEN
+════════════════════════════════════════ -->
+<div id="input-screen">
+    <div class="brand">◀ Teleprompter ▶</div>
+    <h1>YOUR SCRIPT</h1>
+    <p class="sub">Paste your script below, then enter Presentation Mode</p>
+
+    <textarea id="script-input" placeholder="Paste your script here…
+Text scrolls automatically at your chosen speed.
+SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textarea>
+
+    <button id="start-btn">▶ Presentation Mode</button>
+
+    <div class="key-hints">
+        <span><kbd>SPACE</kbd>play / pause</span>
+        <span><kbd>↑ ↓</kbd>navigate</span>
+        <span><kbd>1 – 5</kbd>set speed</span>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     TELEPROMPTER SCREEN
+════════════════════════════════════════ -->
+<div id="tp-screen">
+    <div id="tp-stage">
+        <div id="tp-frame">
+            <div id="tp-arrow">▶</div>
+            <div id="tp-vp">
+                <div id="tp-line"></div>
+                <div id="tp-text"></div>
+                <div id="tp-resize">
+                    <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M23 7L7 23M23 14L14 23M23 20L20 23"
+                              stroke="#ffdd00" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div id="tp-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tp-bar">
+        <!-- Speed -->
+        <div class="bar-group">
+            <span class="bar-lbl">Speed</span>
+            <button class="spd-btn" data-s="1">1</button>
+            <button class="spd-btn" data-s="2">2</button>
+            <button class="spd-btn sel" data-s="3">3</button>
+            <button class="spd-btn" data-s="4">4</button>
+            <button class="spd-btn" data-s="5">5</button>
+        </div>
+
+        <div class="bar-sep"></div>
+
+        <!-- Font size -->
+        <div class="bar-group">
+            <span class="bar-lbl">Text</span>
+            <button class="icon-btn" id="sz-dn">A−</button>
+            <button class="icon-btn" id="sz-up">A+</button>
+        </div>
+
+        <div class="bar-sep"></div>
+
+        <!-- Play / Pause -->
+        <button id="pp-btn">⏸ PAUSE</button>
+
+        <div class="bar-sep"></div>
+
+        <div class="bar-hints">
+            <span>SPACE  play/pause</span>
+            <span>↑↓  scroll</span>
+            <span>1–5  speed</span>
+        </div>
+
+        <button id="edit-btn">✕  Edit</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    const SPD     = { 1: 22, 2: 52, 3: 90, 4: 148, 5: 218 };
+    const READ_Y  = 0.30;
+    const JUMP    = 80;
+    const SZ_STEP = 0.3;
+    const SZ_MIN  = 1.0;
+    const SZ_MAX  = 5.5;
+
+    let playing  = false;
+    let speed    = 3;
+    let fontSize = 2.2;
+    let scroll   = 0;
+    let rafId    = null;
+    let lastTs   = null;
+    let rDrag = false, rX0, rY0, rW0, rH0;
+
+    const $ = id => document.getElementById(id);
+    const inputScr = $('input-screen');
+    const tpScr    = $('tp-screen');
+    const textarea = $('script-input');
+    const vp       = $('tp-vp');
+    const tpText   = $('tp-text');
+    const tpArrow  = $('tp-arrow');
+    const tpLine   = $('tp-line');
+    const ppBtn    = $('pp-btn');
+    const progress = $('tp-progress');
+    const resizeH  = $('tp-resize');
+
+    $('start-btn').addEventListener('click', enterTP);
+    $('edit-btn').addEventListener('click', exitTP);
+    ppBtn.addEventListener('click', togglePlay);
+    $('sz-up').addEventListener('click', () => setFontSize(fontSize + SZ_STEP));
+    $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
+    document.querySelectorAll('.spd-btn').forEach(b =>
+        b.addEventListener('click', () => setSpeed(+b.dataset.s))
+    );
+
+    function enterTP() {
+        const src = textarea.value.trim();
+        if (!src) {
+            textarea.style.borderColor = '#aa2222';
+            setTimeout(() => { textarea.style.borderColor = ''; }, 700);
+            textarea.focus();
+            return;
+        }
+        tpText.textContent = src;
+        tpText.style.fontSize = fontSize + 'rem';
+        scroll  = 0;
+        playing = true;
+        inputScr.style.display = 'none';
+        tpScr.style.display    = 'flex';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            placeIndicators();
+            render();
+            syncPP();
+            startRaf();
+        }));
+    }
+
+    function exitTP() {
+        stopRaf();
+        playing = false;
+        tpScr.style.display    = 'none';
+        inputScr.style.display = 'flex';
+    }
+
+    function placeIndicators() {
+        const y = Math.round(vp.clientHeight * READ_Y);
+        tpLine.style.top   = y + 'px';
+        tpArrow.style.top  = y + 'px';
+        tpArrow.style.transform = 'translateY(-50%)';
+    }
+
+    function render() {
+        const readY = vp.clientHeight * READ_Y;
+        tpText.style.transform = `translateY(${readY - scroll}px)`;
+        const maxS = Math.max(1, tpText.scrollHeight);
+        progress.style.width = Math.min(100, (scroll / maxS) * 100) + '%';
+    }
+
+    function startRaf() {
+        if (rafId) return;
+        lastTs = null;
+        rafId = requestAnimationFrame(tick);
+    }
+    function stopRaf() {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+    function tick(ts) {
+        rafId = requestAnimationFrame(tick);
+        const dt = lastTs === null ? 0 : ts - lastTs;
+        lastTs = ts;
+        if (playing && dt > 0) {
+            scroll += (SPD[speed] / 1000) * dt;
+            if (scroll >= tpText.scrollHeight) {
+                scroll  = tpText.scrollHeight;
+                playing = false;
+                syncPP();
+            }
+        }
+        render();
+    }
+
+    function togglePlay() {
+        playing = !playing;
+        if (playing) lastTs = null;
+        syncPP();
+    }
+    function syncPP() {
+        ppBtn.textContent = playing ? '⏸ PAUSE' : '▶  PLAY';
+        ppBtn.classList.toggle('paused', !playing);
+    }
+
+    function setSpeed(s) {
+        speed = s;
+        document.querySelectorAll('.spd-btn').forEach(b =>
+            b.classList.toggle('sel', +b.dataset.s === s)
+        );
+    }
+
+    function setFontSize(sz) {
+        fontSize = Math.min(SZ_MAX, Math.max(SZ_MIN, sz));
+        tpText.style.fontSize = fontSize + 'rem';
+    }
+
+    document.addEventListener('keydown', e => {
+        if (tpScr.style.display === 'none') return;
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+        switch (e.key) {
+            case ' ':         e.preventDefault(); togglePlay(); break;
+            case 'ArrowDown': e.preventDefault(); scroll += JUMP; break;
+            case 'ArrowUp':   e.preventDefault(); scroll = Math.max(0, scroll - JUMP); break;
+            case '1': case '2': case '3': case '4': case '5': setSpeed(+e.key); break;
+        }
+    });
+
+    resizeH.addEventListener('mousedown', e => {
+        rDrag = true;
+        rX0 = e.clientX; rY0 = e.clientY;
+        rW0 = vp.clientWidth; rH0 = vp.clientHeight;
+        e.preventDefault(); e.stopPropagation();
+    });
+    document.addEventListener('mousemove', e => {
+        if (!rDrag) return;
+        vp.style.width  = Math.max(320, rW0 + (e.clientX - rX0)) + 'px';
+        vp.style.height = Math.max(160, rH0 + (e.clientY - rY0)) + 'px';
+        placeIndicators();
+    });
+    document.addEventListener('mouseup', () => { rDrag = false; });
+
+    window.addEventListener('resize', () => {
+        if (tpScr.style.display !== 'none') placeIndicators();
+    });
+}());
+</script>
+</body>
+</html>
