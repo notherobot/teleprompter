@@ -30,9 +30,17 @@
         .brand {
             font-size: 0.72rem;
             letter-spacing: 10px;
-            color: #ffdd00;
+            color: #ffffff;
             text-transform: uppercase;
             margin-bottom: 14px;
+        }
+
+        .version {
+            font-size: 0.62rem;
+            letter-spacing: 4px;
+            color: #2a2a2a;
+            text-transform: uppercase;
+            margin-bottom: 10px;
         }
 
         #input-screen h1 {
@@ -64,13 +72,13 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        #script-input:focus      { border-color: #ffdd00; }
+        #script-input:focus      { border-color: #ffffff; }
         #script-input::placeholder { color: #2c2c2c; }
 
         #start-btn {
             margin-top: 22px;
             padding: 15px 52px;
-            background: #ffdd00;
+            background: #ffffff;
             color: #000;
             border: none;
             border-radius: 10px;
@@ -84,7 +92,7 @@
         }
         #start-btn:hover {
             background: #ffe62b;
-            box-shadow: 0 0 40px rgba(255, 221, 0, 0.22);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.22);
             transform: translateY(-2px);
         }
 
@@ -134,12 +142,12 @@
         #tp-arrow {
             position: absolute;
             left: -58px;
-            color: #ffdd00;
+            color: #ffffff;
             font-size: 2.4rem;
             line-height: 1;
             pointer-events: none;
             z-index: 30;
-            filter: drop-shadow(0 0 12px rgba(255, 221, 0, 0.55));
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55));
             /* top + transform set by JS */
         }
 
@@ -179,9 +187,9 @@
             background: linear-gradient(
                 to right,
                 transparent 0%,
-                rgba(255, 221, 0, 0.07) 20%,
-                rgba(255, 221, 0, 0.13) 50%,
-                rgba(255, 221, 0, 0.07) 80%,
+                rgba(255, 255, 255, 0.07) 20%,
+                rgba(255, 255, 255, 0.13) 50%,
+                rgba(255, 255, 255, 0.07) 80%,
                 transparent 100%
             );
             z-index: 11;
@@ -196,7 +204,7 @@
             font-family: Arial, sans-serif;
             font-size: 2.2rem;
             line-height: 1.65;
-            color: #ffdd00;
+            color: #ffffff;
             white-space: pre-wrap;
             word-break: break-word;
             will-change: transform;
@@ -220,7 +228,7 @@
             bottom: 0; left: 0;
             height: 2px;
             width: 0%;
-            background: #ffdd00;
+            background: #ffffff;
             opacity: 0.35;
             z-index: 40;
             pointer-events: none;
@@ -270,7 +278,7 @@
             transition: background 0.12s, color 0.12s;
         }
         .spd-btn:hover { background: #1d1d1d; color: #777; }
-        .spd-btn.sel   { background: #ffdd00; border-color: #ffdd00; color: #000; }
+        .spd-btn.sel   { background: #ffffff; border-color: #ffffff; color: #000; }
 
         .icon-btn {
             padding: 6px 13px;
@@ -287,7 +295,7 @@
 
         #pp-btn {
             padding: 9px 30px;
-            background: #ffdd00;
+            background: #ffffff;
             border: none;
             border-radius: 7px;
             color: #000;
@@ -303,8 +311,8 @@
         #pp-btn:hover   { background: #ffe83a; }
         #pp-btn.paused  {
             background: #111;
-            color: #ffdd00;
-            border: 1px solid #ffdd00;
+            color: #ffffff;
+            border: 1px solid #ffffff;
         }
 
         .bar-hints {
@@ -348,9 +356,9 @@
         #countdown-num {
             font-size: 10rem;
             font-weight: 900;
-            color: #ffdd00;
+            color: #ffffff;
             line-height: 1;
-            filter: drop-shadow(0 0 60px rgba(255, 221, 0, 0.5));
+            filter: drop-shadow(0 0 60px rgba(255, 255, 255, 0.5));
             animation: cd-pop 1s ease-out forwards;
         }
         #countdown-label {
@@ -375,6 +383,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
+    <div class="version">v3</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -404,7 +413,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 <div id="tp-resize">
                     <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M23 7L7 23M23 14L14 23M23 20L20 23"
-                              stroke="#ffdd00" stroke-width="2.2" stroke-linecap="round"/>
+                              stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"/>
                     </svg>
                 </div>
                 <div id="tp-progress"></div>
