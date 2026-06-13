@@ -248,7 +248,6 @@
         }
         #tp-resize:hover { opacity: 1; }
 
-        #tp-vp.mirrored { transform: scaleX(-1); }
         #mirror-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
 
         /* ══════════════════════════════════════
@@ -471,7 +470,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v9</div>
+    <div class="version">v10</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -667,7 +666,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         playing = false;
         inputScr.style.display = 'none';
         tpScr.style.display    = 'flex';
-        vp.classList.toggle('mirrored', mirrored);
         requestAnimationFrame(() => requestAnimationFrame(() => {
             placeIndicators();
             render();
@@ -727,7 +725,9 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function render() {
         const readY = vp.clientHeight * READ_Y;
-        tpText.style.transform = `translateY(${readY - scroll}px)`;
+        tpText.style.transform = mirrored
+            ? `translateY(${readY - scroll}px) scaleX(-1)`
+            : `translateY(${readY - scroll}px)`;
         const maxS = Math.max(1, tpText.scrollHeight);
         const pct  = Math.min(1, scroll / maxS);
         scrubFill.style.width    = (pct * 100) + '%';
@@ -784,8 +784,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function toggleMirror() {
         mirrored = !mirrored;
-        vp.classList.toggle('mirrored', mirrored);
         $('mirror-btn').classList.toggle('on', mirrored);
+        render();
     }
 
     function setFontSize(sz) {
