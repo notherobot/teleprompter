@@ -151,17 +151,30 @@
 
         #tp-stage {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 70px;
+            position: relative;
             overflow: hidden;
         }
 
-        /* Outer frame — sized to the viewport */
+        /* Outer frame — draggable, centered by JS on init */
         #tp-frame {
-            position: relative;
+            position: absolute;
+            cursor: default;
         }
+
+        #tp-drag {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 26px; height: 26px;
+            cursor: grab;
+            z-index: 30;
+            opacity: 0.3;
+            color: var(--accent);
+            transition: opacity 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem;
+        }
+        #tp-drag:hover { opacity: 1; }
+        #tp-drag.dragging { cursor: grabbing; opacity: 1; }
 
         /* Arrow indicator */
         #tp-arrow {
@@ -481,7 +494,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v15</div>
+    <div class="version">v16</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -512,6 +525,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 <div id="tp-screen">
     <div id="tp-stage">
         <div id="tp-frame">
+            <div id="tp-drag">✥</div>
             <div id="tp-arrow">▶</div>
             <div id="tp-vp">
                 <div id="tp-inner">
@@ -583,7 +597,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         <!-- Countdown toggle -->
         <div class="bar-group">
             <span class="bar-lbl">Countdown</span>
-            <button class="icon-btn on" id="cd-toggle-btn">5s</button>
+            <button class="icon-btn on" id="cd-toggle-btn">On</button>
         </div>
 
         <div class="bar-sep"></div>
@@ -639,6 +653,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     const tpScr    = $('tp-screen');
     const textarea = $('script-input');
     const vp       = $('tp-vp');
+    const tpFrame  = $('tp-frame');
+    const tpStage  = $('tp-stage');
     const tpInner  = $('tp-inner');
     const tpText   = $('tp-text');
     const tpArrow  = $('tp-arrow');
@@ -682,7 +698,9 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('mirror-btn').addEventListener('click', toggleMirror);
     $('cd-toggle-btn').addEventListener('click', () => {
         cdEnabled = !cdEnabled;
-        $('cd-toggle-btn').classList.toggle('on', cdEnabled);
+        const btn = $('cd-toggle-btn');
+        btn.textContent = cdEnabled ? 'On' : 'Off';
+        btn.classList.toggle('on', cdEnabled);
     });
     $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
@@ -706,6 +724,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         tpInner.classList.toggle('rotated', rotated);
         $('rotate-btn').classList.toggle('on', rotated);
         requestAnimationFrame(() => requestAnimationFrame(() => {
+            centerFrame();
             placeIndicators();
             render();
             syncPP();
@@ -808,6 +827,11 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     }
 
     function togglePlay() {
+        if (!playing && cdEnabled) {
+            cancelCountdown();
+            startCountdown();
+            return;
+        }
         playing = !playing;
         if (playing) lastTs = null;
         syncPP();
@@ -912,6 +936,36 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         syncPP();
     });
 
+    /* ── Frame drag ── */
+    let fDrag = false, fX0, fY0, fL0, fT0;
+    const dragH = $('tp-drag');
+
+    function centerFrame() {
+        tpFrame.style.left = Math.round((tpStage.clientWidth  - tpFrame.offsetWidth)  / 2) + 'px';
+        tpFrame.style.top  = Math.round((tpStage.clientHeight - tpFrame.offsetHeight) / 2) + 'px';
+    }
+
+    function startFrameDrag(clientX, clientY) {
+        fDrag = true;
+        fX0 = clientX; fY0 = clientY;
+        fL0 = tpFrame.offsetLeft; fT0 = tpFrame.offsetTop;
+        dragH.classList.add('dragging');
+    }
+    function doFrameDrag(clientX, clientY) {
+        if (!fDrag) return;
+        tpFrame.style.left = (fL0 + clientX - fX0) + 'px';
+        tpFrame.style.top  = (fT0 + clientY - fY0) + 'px';
+    }
+    function endFrameDrag() { fDrag = false; dragH.classList.remove('dragging'); }
+
+    dragH.addEventListener('mousedown', e => { startFrameDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', e => { doFrameDrag(e.clientX, e.clientY); });
+    document.addEventListener('mouseup', endFrameDrag);
+
+    dragH.addEventListener('touchstart', e => { startFrameDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    dragH.addEventListener('touchmove',  e => { doFrameDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    dragH.addEventListener('touchend', endFrameDrag);
+
     function startResize(clientX, clientY) {
         rDrag = true;
         rX0 = clientX; rY0 = clientY;
@@ -942,7 +996,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     resizeH.addEventListener('touchend', () => { rDrag = false; });
 
     window.addEventListener('resize', () => {
-        if (tpScr.style.display !== 'none') placeIndicators();
+        if (tpScr.style.display !== 'none') { centerFrame(); placeIndicators(); }
     });
 }());
 </script>
