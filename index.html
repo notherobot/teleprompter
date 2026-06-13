@@ -471,7 +471,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v11</div>
+    <div class="version">v12</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -736,7 +736,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function render() {
         const readY = vp.clientHeight * READ_Y;
-        const tx = `translateY(${readY - scroll}px)` +
+        const translateY = rotated ? (scroll - readY) : (readY - scroll);
+        const tx = `translateY(${translateY}px)` +
                    (mirrored ? ' scaleX(-1)' : '') +
                    (rotated  ? ' rotate(180deg)' : '');
         tpText.style.transform = tx;
