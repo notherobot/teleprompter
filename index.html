@@ -258,7 +258,8 @@
         #tp-inner.rotated { transform: rotate(180deg); }
 
         #mirror-btn.on,
-        #rotate-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+        #rotate-btn.on,
+        #cd-toggle-btn.on { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
 
         /* ══════════════════════════════════════
            CONTROLS BAR
@@ -480,7 +481,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v14</div>
+    <div class="version">v15</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -579,6 +580,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
         <div class="bar-sep"></div>
 
+        <!-- Countdown toggle -->
+        <div class="bar-group">
+            <span class="bar-lbl">Countdown</span>
+            <button class="icon-btn on" id="cd-toggle-btn">5s</button>
+        </div>
+
+        <div class="bar-sep"></div>
+
         <!-- Play / Pause -->
         <button id="pp-btn">⏸ PAUSE</button>
 
@@ -622,7 +631,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let mirrored = true;
     let rotated  = true;
     let rDrag = false, rX0, rY0, rW0, rH0;
-    let cdTimeout = null;
+    let cdTimeout  = null;
+    let cdEnabled  = true;
 
     const $ = id => document.getElementById(id);
     const inputScr = $('input-screen');
@@ -670,6 +680,10 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('sz-up').addEventListener('click', () => setFontSize(fontSize + SZ_STEP));
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
     $('mirror-btn').addEventListener('click', toggleMirror);
+    $('cd-toggle-btn').addEventListener('click', () => {
+        cdEnabled = !cdEnabled;
+        $('cd-toggle-btn').classList.toggle('on', cdEnabled);
+    });
     $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
@@ -683,7 +697,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             textarea.focus();
             return;
         }
-        tpText.textContent = src;
+        tpText.textContent = '\n\n' + src;
         tpText.style.fontSize = fontSize + 'rem';
         scroll  = 0;
         playing = false;
@@ -696,7 +710,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             render();
             syncPP();
             startRaf();
-            startCountdown();
+            if (cdEnabled) startCountdown(); else { playing = true; lastTs = null; syncPP(); }
         }));
     }
 
