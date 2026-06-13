@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teleprompter</title>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --accent: #ffffff; --accent-rgb: 255, 255, 255; }
 
@@ -451,6 +453,153 @@
         #edit-btn:hover { color: #fff; border-color: #777; }
 
         /* ══════════════════════════════════════
+           REMOTE CONTROL MODE (phone)
+        ══════════════════════════════════════ */
+        #remote-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            background: #0a0a0a;
+            padding: 32px 24px 40px;
+        }
+        #remote-screen.active { display: flex; }
+
+        .remote-status {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #444;
+        }
+        .remote-status span { color: #ccc; }
+        #remote-dot {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #333;
+            margin-right: 6px;
+            vertical-align: middle;
+            transition: background 0.3s;
+        }
+        #remote-dot.connected { background: #4cff72; box-shadow: 0 0 8px #4cff72; }
+        #remote-dot.waiting   { background: #ffaa00; box-shadow: 0 0 8px #ffaa00; animation: pulse 1.2s infinite; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        #remote-pp {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #000;
+            font-size: 3.2rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.12s, opacity 0.12s;
+            flex-shrink: 0;
+        }
+        #remote-pp:active { transform: scale(0.93); opacity: 0.8; }
+        #remote-pp.paused { background: #1a1a1a; color: var(--accent); border: 3px solid var(--accent); }
+
+        .remote-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .remote-btn {
+            flex: 1;
+            max-width: 120px;
+            height: 64px;
+            background: #141414;
+            border: 1px solid #252525;
+            border-radius: 12px;
+            color: #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .remote-btn:active { background: #252525; }
+
+        .remote-speed-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .remote-spd-lbl {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: #444;
+            text-transform: uppercase;
+            min-width: 50px;
+            text-align: center;
+        }
+        #remote-spd-val {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--accent);
+            min-width: 24px;
+            text-align: center;
+        }
+        .remote-spd-btn {
+            width: 48px; height: 48px;
+            background: #141414;
+            border: 1px solid #252525;
+            border-radius: 10px;
+            color: #aaa;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .remote-spd-btn:active { background: #252525; }
+
+        /* QR modal */
+        #qr-modal {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.88);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 18px;
+        }
+        #qr-modal.active { display: flex; }
+        #qr-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+        }
+        #qr-url {
+            font-size: 0.7rem;
+            color: #666;
+            letter-spacing: 1px;
+            text-align: center;
+            max-width: 300px;
+            word-break: break-all;
+        }
+        #qr-close {
+            padding: 10px 32px;
+            background: transparent;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #aaa;
+            font-family: Arial, sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        #qr-close:hover { border-color: #666; color: #fff; }
+        #remote-conn-status {
+            font-size: 0.68rem;
+            color: #444;
+            letter-spacing: 1px;
+        }
+        #remote-conn-status.live { color: #4cff72; }
+
+        /* ══════════════════════════════════════
            COUNTDOWN OVERLAY
         ══════════════════════════════════════ */
         #tp-countdown {
@@ -494,7 +643,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v17</div>
+    <div class="version">v18-remote-preview</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -613,6 +762,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             <span>1–5  speed</span>
         </div>
 
+        <button id="remote-btn" class="icon-btn" style="margin-right:8px">📱 Remote</button>
         <button id="edit-btn">✕  Edit</button>
     </div>
 </div>
@@ -623,6 +773,40 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 <div id="tp-countdown">
     <div id="countdown-num">5</div>
     <div id="countdown-label">Starting in…</div>
+</div>
+
+<!-- ════════════════════════════════════════
+     REMOTE CONTROL SCREEN (phone)
+════════════════════════════════════════ -->
+<div id="remote-screen">
+    <div class="remote-status">
+        <span id="remote-dot" class="waiting"></span>
+        <span id="remote-status-text">Connecting…</span>
+    </div>
+
+    <button id="remote-pp" class="paused">▶</button>
+
+    <div class="remote-row">
+        <button class="remote-btn" id="remote-up">↑</button>
+        <button class="remote-btn" id="remote-down">↓</button>
+    </div>
+
+    <div class="remote-speed-row">
+        <button class="remote-spd-btn" id="remote-spd-dn">−</button>
+        <div>
+            <div class="remote-spd-lbl">Speed</div>
+            <div id="remote-spd-val">3</div>
+        </div>
+        <button class="remote-spd-btn" id="remote-spd-up">+</button>
+    </div>
+</div>
+
+<!-- QR Modal -->
+<div id="qr-modal">
+    <div id="qr-box"></div>
+    <div id="qr-url"></div>
+    <div id="remote-conn-status">Waiting for phone to connect…</div>
+    <button id="qr-close">✕ Close</button>
 </div>
 
 <script>
@@ -836,9 +1020,12 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         if (playing) lastTs = null;
         syncPP();
     }
+    let broadcastState = null;
+
     function syncPP() {
         ppBtn.textContent = playing ? '⏸ PAUSE' : '▶  PLAY';
         ppBtn.classList.toggle('paused', !playing);
+        if (broadcastState) broadcastState();
     }
 
     function setSpeed(s) {
@@ -998,6 +1185,104 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     window.addEventListener('resize', () => {
         if (tpScr.style.display !== 'none') { centerFrame(); placeIndicators(); }
     });
+
+    /* ══════════════════════════════════════
+       PEER-TO-PEER REMOTE CONTROL
+    ══════════════════════════════════════ */
+    const remoteParam = new URLSearchParams(location.search).get('remote');
+    const isRemote    = !!remoteParam;
+
+    if (isRemote) {
+        /* ── PHONE / REMOTE SIDE ── */
+        inputScr.style.display  = 'none';
+        tpScr.style.display     = 'none';
+        $('remote-screen').classList.add('active');
+
+        let remoteSpeed   = 3;
+        let remotePlaying = false;
+
+        const peer = new Peer();
+        let conn;
+
+        peer.on('open', () => {
+            conn = peer.connect(remoteParam);
+            conn.on('open', () => {
+                $('remote-dot').className = 'connected';
+                $('remote-status-text').textContent = 'Connected';
+            });
+            conn.on('close', () => {
+                $('remote-dot').className = 'waiting';
+                $('remote-status-text').textContent = 'Disconnected';
+            });
+            /* Receive state updates from host */
+            conn.on('data', d => {
+                if (d.type === 'state') {
+                    remotePlaying = d.playing;
+                    $('remote-pp').textContent = remotePlaying ? '⏸' : '▶';
+                    $('remote-pp').classList.toggle('paused', !remotePlaying);
+                    remoteSpeed = d.speed;
+                    $('remote-spd-val').textContent = remoteSpeed;
+                }
+            });
+        });
+
+        function send(obj) { if (conn && conn.open) conn.send(obj); }
+
+        $('remote-pp').addEventListener('click', () => send({ cmd: 'togglePlay' }));
+        $('remote-up').addEventListener('click', () => send({ cmd: 'scrollUp' }));
+        $('remote-down').addEventListener('click', () => send({ cmd: 'scrollDown' }));
+        $('remote-spd-up').addEventListener('click', () => {
+            remoteSpeed = Math.min(5, remoteSpeed + 1);
+            $('remote-spd-val').textContent = remoteSpeed;
+            send({ cmd: 'speed', val: remoteSpeed });
+        });
+        $('remote-spd-dn').addEventListener('click', () => {
+            remoteSpeed = Math.max(1, remoteSpeed - 1);
+            $('remote-spd-val').textContent = remoteSpeed;
+            send({ cmd: 'speed', val: remoteSpeed });
+        });
+
+    } else {
+        /* ── DESKTOP / HOST SIDE ── */
+        let hostPeer, hostConn;
+
+        broadcastState = function () {
+            if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'state', playing, speed });
+            }
+        };
+
+        $('remote-btn').addEventListener('click', () => {
+            if (!hostPeer) {
+                hostPeer = new Peer();
+                hostPeer.on('open', id => {
+                    const url = location.origin + location.pathname + '?remote=' + id;
+                    $('qr-url').textContent = url;
+                    new QRCode($('qr-box'), { text: url, width: 220, height: 220, colorDark: '#000', colorLight: '#fff' });
+                    hostPeer.on('connection', c => {
+                        hostConn = c;
+                        $('remote-conn-status').textContent = '● Phone connected';
+                        $('remote-conn-status').classList.add('live');
+                        c.on('data', d => {
+                            if (d.cmd === 'togglePlay') togglePlay();
+                            if (d.cmd === 'scrollUp')   { scroll = Math.max(0, scroll - JUMP); }
+                            if (d.cmd === 'scrollDown')  { scroll += JUMP; }
+                            if (d.cmd === 'speed')       { setSpeed(d.val); }
+                            broadcastState();
+                        });
+                        c.on('close', () => {
+                            $('remote-conn-status').textContent = 'Waiting for phone to connect…';
+                            $('remote-conn-status').classList.remove('live');
+                        });
+                        broadcastState();
+                    });
+                });
+            }
+            $('qr-modal').classList.add('active');
+        });
+
+        $('qr-close').addEventListener('click', () => $('qr-modal').classList.remove('active'));
+    }
 }());
 </script>
 </body>
