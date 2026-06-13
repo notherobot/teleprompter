@@ -248,6 +248,9 @@
         }
         #tp-resize:hover { opacity: 1; }
 
+        #tp-vp.mirrored { transform: scaleX(-1); }
+        #mirror-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+
         /* ══════════════════════════════════════
            CONTROLS BAR
         ══════════════════════════════════════ */
@@ -468,7 +471,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v8</div>
+    <div class="version">v9</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -549,6 +552,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
         <div class="bar-sep"></div>
 
+        <!-- Mirror -->
+        <div class="bar-group">
+            <span class="bar-lbl">Mirror</span>
+            <button class="icon-btn on" id="mirror-btn">⇄</button>
+        </div>
+
+        <div class="bar-sep"></div>
+
         <!-- Play / Pause -->
         <button id="pp-btn">⏸ PAUSE</button>
 
@@ -589,6 +600,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let scroll   = 0;
     let rafId    = null;
     let lastTs   = null;
+    let mirrored = true;
     let rDrag = false, rX0, rY0, rW0, rH0;
     let cdTimeout = null;
 
@@ -636,6 +648,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     ppBtn.addEventListener('click', togglePlay);
     $('sz-up').addEventListener('click', () => setFontSize(fontSize + SZ_STEP));
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
+    $('mirror-btn').addEventListener('click', toggleMirror);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
     );
@@ -654,6 +667,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         playing = false;
         inputScr.style.display = 'none';
         tpScr.style.display    = 'flex';
+        vp.classList.toggle('mirrored', mirrored);
         requestAnimationFrame(() => requestAnimationFrame(() => {
             placeIndicators();
             render();
@@ -768,6 +782,12 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         );
     }
 
+    function toggleMirror() {
+        mirrored = !mirrored;
+        vp.classList.toggle('mirrored', mirrored);
+        $('mirror-btn').classList.toggle('on', mirrored);
+    }
+
     function setFontSize(sz) {
         fontSize = Math.min(SZ_MAX, Math.max(SZ_MIN, sz));
         tpText.style.fontSize = fontSize + 'rem';
@@ -843,19 +863,34 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         syncPP();
     });
 
-    resizeH.addEventListener('mousedown', e => {
+    function startResize(clientX, clientY) {
         rDrag = true;
-        rX0 = e.clientX; rY0 = e.clientY;
+        rX0 = clientX; rY0 = clientY;
         rW0 = vp.clientWidth; rH0 = vp.clientHeight;
+    }
+    function doResize(clientX, clientY) {
+        if (!rDrag) return;
+        vp.style.width  = Math.max(320, rW0 + (clientX - rX0)) + 'px';
+        vp.style.height = Math.max(160, rH0 + (clientY - rY0)) + 'px';
+        placeIndicators();
+    }
+
+    resizeH.addEventListener('mousedown', e => {
+        startResize(e.clientX, e.clientY);
         e.preventDefault(); e.stopPropagation();
     });
-    document.addEventListener('mousemove', e => {
-        if (!rDrag) return;
-        vp.style.width  = Math.max(320, rW0 + (e.clientX - rX0)) + 'px';
-        vp.style.height = Math.max(160, rH0 + (e.clientY - rY0)) + 'px';
-        placeIndicators();
-    });
-    document.addEventListener('mouseup', () => { rDrag = false; });
+    document.addEventListener('mousemove', e => { doResize(e.clientX, e.clientY); });
+    document.addEventListener('mouseup',   () => { rDrag = false; });
+
+    resizeH.addEventListener('touchstart', e => {
+        startResize(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    resizeH.addEventListener('touchmove', e => {
+        doResize(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+    }, { passive: false });
+    resizeH.addEventListener('touchend', () => { rDrag = false; });
 
     window.addEventListener('resize', () => {
         if (tpScr.style.display !== 'none') placeIndicators();
