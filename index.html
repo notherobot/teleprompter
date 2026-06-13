@@ -184,6 +184,13 @@
             position: relative;
         }
 
+        /* Inner rotation wrapper — same footprint as the viewport */
+        #tp-inner {
+            position: absolute;
+            inset: 0;
+            overflow: visible;
+        }
+
         /* Gradient masks — fade text into black at edges */
         #tp-vp::before,
         #tp-vp::after {
@@ -247,6 +254,8 @@
             transition: opacity 0.2s;
         }
         #tp-resize:hover { opacity: 1; }
+
+        #tp-inner.rotated { transform: rotate(180deg); }
 
         #mirror-btn.on,
         #rotate-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
@@ -471,7 +480,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v12</div>
+    <div class="version">v13</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -504,8 +513,10 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         <div id="tp-frame">
             <div id="tp-arrow">▶</div>
             <div id="tp-vp">
-                <div id="tp-line"></div>
-                <div id="tp-text"></div>
+                <div id="tp-inner">
+                    <div id="tp-line"></div>
+                    <div id="tp-text"></div>
+                </div>
                 <div id="tp-resize">
                     <svg viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M23 7L7 23M23 14L14 23M23 20L20 23"
@@ -618,6 +629,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     const tpScr    = $('tp-screen');
     const textarea = $('script-input');
     const vp       = $('tp-vp');
+    const tpInner  = $('tp-inner');
     const tpText   = $('tp-text');
     const tpArrow  = $('tp-arrow');
     const tpLine   = $('tp-line');
@@ -736,10 +748,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function render() {
         const readY = vp.clientHeight * READ_Y;
-        const translateY = rotated ? (scroll - readY) : (readY - scroll);
-        const tx = `translateY(${translateY}px)` +
-                   (mirrored ? ' scaleX(-1)' : '') +
-                   (rotated  ? ' rotate(180deg)' : '');
+        const tx = `translateY(${readY - scroll}px)` +
+                   (mirrored ? ' scaleX(-1)' : '');
         tpText.style.transform = tx;
         const maxS = Math.max(1, tpText.scrollHeight);
         const pct  = Math.min(1, scroll / maxS);
@@ -803,8 +813,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function toggleRotate() {
         rotated = !rotated;
+        tpInner.classList.toggle('rotated', rotated);
         $('rotate-btn').classList.toggle('on', rotated);
-        render();
     }
 
     function setFontSize(sz) {
