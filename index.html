@@ -248,7 +248,8 @@
         }
         #tp-resize:hover { opacity: 1; }
 
-        #mirror-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
+        #mirror-btn.on,
+        #rotate-btn.on  { background: var(--accent); border-color: var(--accent); color: #0a0a0a; }
 
         /* ══════════════════════════════════════
            CONTROLS BAR
@@ -470,7 +471,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v10</div>
+    <div class="version">v11</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -559,6 +560,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
         <div class="bar-sep"></div>
 
+        <!-- Rotate -->
+        <div class="bar-group">
+            <span class="bar-lbl">Rotate</span>
+            <button class="icon-btn" id="rotate-btn">↻</button>
+        </div>
+
+        <div class="bar-sep"></div>
+
         <!-- Play / Pause -->
         <button id="pp-btn">⏸ PAUSE</button>
 
@@ -600,6 +609,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let rafId    = null;
     let lastTs   = null;
     let mirrored = true;
+    let rotated  = false;
     let rDrag = false, rX0, rY0, rW0, rH0;
     let cdTimeout = null;
 
@@ -648,6 +658,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('sz-up').addEventListener('click', () => setFontSize(fontSize + SZ_STEP));
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
     $('mirror-btn').addEventListener('click', toggleMirror);
+    $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
     );
@@ -725,9 +736,10 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function render() {
         const readY = vp.clientHeight * READ_Y;
-        tpText.style.transform = mirrored
-            ? `translateY(${readY - scroll}px) scaleX(-1)`
-            : `translateY(${readY - scroll}px)`;
+        const tx = `translateY(${readY - scroll}px)` +
+                   (mirrored ? ' scaleX(-1)' : '') +
+                   (rotated  ? ' rotate(180deg)' : '');
+        tpText.style.transform = tx;
         const maxS = Math.max(1, tpText.scrollHeight);
         const pct  = Math.min(1, scroll / maxS);
         scrubFill.style.width    = (pct * 100) + '%';
@@ -785,6 +797,12 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     function toggleMirror() {
         mirrored = !mirrored;
         $('mirror-btn').classList.toggle('on', mirrored);
+        render();
+    }
+
+    function toggleRotate() {
+        rotated = !rotated;
+        $('rotate-btn').classList.toggle('on', rotated);
         render();
     }
 
