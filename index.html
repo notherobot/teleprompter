@@ -263,6 +263,30 @@
         /* ══════════════════════════════════════
            CONTROLS BAR
         ══════════════════════════════════════ */
+        /* ══════════════════════════════════════
+           DURATION STRIP
+        ══════════════════════════════════════ */
+        #tp-duration {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 7px 24px;
+            background: #050505;
+            border-top: 1px solid #0e0e0e;
+            font-family: Arial, sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 1.5px;
+            color: #555;
+        }
+        #tp-duration .dur-val {
+            color: #ccc;
+            font-weight: 700;
+            font-size: 0.82rem;
+        }
+        #tp-duration .dur-sep { color: #222; }
+
         #tp-bar {
             background: #080808;
             border-top: 1px solid #131313;
@@ -409,7 +433,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v6</div>
+    <div class="version">v7</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -453,6 +477,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 <div id="tp-progress"></div>
             </div>
         </div>
+    </div>
+
+    <div id="tp-duration">
+        <span>ELAPSED&nbsp;<span class="dur-val" id="dur-elapsed">0:00</span></span>
+        <span class="dur-sep">·</span>
+        <span>REMAINING&nbsp;<span class="dur-val" id="dur-remaining">—</span></span>
+        <span class="dur-sep">·</span>
+        <span>TOTAL&nbsp;<span class="dur-val" id="dur-total">—</span></span>
     </div>
 
     <div id="tp-bar">
@@ -531,6 +563,9 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     const ppBtn    = $('pp-btn');
     const progress = $('tp-progress');
     const resizeH  = $('tp-resize');
+    const durElapsed   = $('dur-elapsed');
+    const durRemaining = $('dur-remaining');
+    const durTotal     = $('dur-total');
     const cdOverlay = $('tp-countdown');
     const cdNum     = $('countdown-num');
 
@@ -629,11 +664,24 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         tpArrow.style.transform = 'translateY(-50%)';
     }
 
+    function fmt(sec) {
+        const s = Math.max(0, Math.round(sec));
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+
     function render() {
         const readY = vp.clientHeight * READ_Y;
         tpText.style.transform = `translateY(${readY - scroll}px)`;
         const maxS = Math.max(1, tpText.scrollHeight);
         progress.style.width = Math.min(100, (scroll / maxS) * 100) + '%';
+
+        const pxPerSec   = SPD[speed];
+        const totalSec   = maxS / pxPerSec;
+        const elapsedSec = scroll / pxPerSec;
+        const remSec     = Math.max(0, totalSec - elapsedSec);
+        durElapsed.textContent   = fmt(elapsedSec);
+        durRemaining.textContent = fmt(remSec);
+        durTotal.textContent     = fmt(totalSec);
     }
 
     function startRaf() {
