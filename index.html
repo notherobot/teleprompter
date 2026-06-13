@@ -480,7 +480,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v13</div>
+    <div class="version">v14</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -620,7 +620,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let rafId    = null;
     let lastTs   = null;
     let mirrored = true;
-    let rotated  = false;
+    let rotated  = true;
     let rDrag = false, rX0, rY0, rW0, rH0;
     let cdTimeout = null;
 
@@ -689,6 +689,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         playing = false;
         inputScr.style.display = 'none';
         tpScr.style.display    = 'flex';
+        tpInner.classList.toggle('rotated', rotated);
+        $('rotate-btn').classList.toggle('on', rotated);
         requestAnimationFrame(() => requestAnimationFrame(() => {
             placeIndicators();
             render();
@@ -735,9 +737,12 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     }
 
     function placeIndicators() {
-        const y = Math.round(vp.clientHeight * READ_Y);
-        tpLine.style.top   = y + 'px';
-        tpArrow.style.top  = y + 'px';
+        const lineY  = Math.round(vp.clientHeight * READ_Y);
+        const arrowY = rotated
+            ? Math.round(vp.clientHeight * (1 - READ_Y))
+            : lineY;
+        tpLine.style.top   = lineY + 'px';
+        tpArrow.style.top  = arrowY + 'px';
         tpArrow.style.transform = 'translateY(-50%)';
     }
 
@@ -815,6 +820,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         rotated = !rotated;
         tpInner.classList.toggle('rotated', rotated);
         $('rotate-btn').classList.toggle('on', rotated);
+        placeIndicators();
     }
 
     function setFontSize(sz) {
