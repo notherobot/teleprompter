@@ -1105,11 +1105,9 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function placeIndicators() {
         const lineY  = Math.round(vp.clientHeight * READ_Y);
-        const arrowY = rotated
-            ? Math.round(vp.clientHeight * (1 - READ_Y))
-            : lineY;
+        const midY   = Math.round(vp.clientHeight * 0.5);
         tpLine.style.top   = lineY + 'px';
-        tpArrow.style.top  = arrowY + 'px';
+        tpArrow.style.top  = midY + 'px';
         tpArrow.style.transform = 'translateY(-50%)';
     }
 
