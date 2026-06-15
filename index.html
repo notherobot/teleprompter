@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teleprompter</title>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --accent: #ffffff; --accent-rgb: 255, 255, 255; }
@@ -684,7 +684,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v20</div>
+    <div class="version">v21</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -1238,28 +1238,24 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     });
 
     /* ══════════════════════════════════════
-       PEER-TO-PEER REMOTE CONTROL
+       MQTT SHARED-STATE REMOTE CONTROL
+       Both devices connect to the same
+       topic on a free public broker —
+       no P2P handshake required.
     ══════════════════════════════════════ */
-    const remoteParam = new URLSearchParams(location.search).get('remote');
-    const isRemote    = !!remoteParam;
+    const sessionParam = new URLSearchParams(location.search).get('session');
+    const isRemote     = !!sessionParam;
 
-    const PEER_CFG = {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                {
-                    urls: [
-                        'turn:openrelay.metered.ca:80',
-                        'turn:openrelay.metered.ca:443',
-                        'turn:openrelay.metered.ca:443?transport=tcp'
-                    ],
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
-            ]
-        }
-    };
+    const BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+
+    function mqttConnect(clientId) {
+        return mqtt.connect(BROKER, {
+            clientId,
+            clean: true,
+            reconnectPeriod: 2000,
+            connectTimeout: 8000
+        });
+    }
 
     if (isRemote) {
         /* ── PHONE / REMOTE SIDE ── */
@@ -1267,89 +1263,99 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         tpScr.style.display     = 'none';
         $('remote-screen').classList.add('active');
 
-        let remoteSpeed   = 3;
+        const sessionId  = sessionParam;
+        const stateTopic = 'tp/' + sessionId + '/state';
+        const cmdTopic   = 'tp/' + sessionId + '/cmd';
+        let remoteSpeed  = 3;
 
-        const peer = new Peer(undefined, PEER_CFG);
-        let conn;
+        const client = mqttConnect('remote-' + Math.random().toString(36).slice(2));
 
-        peer.on('open', () => {
-            conn = peer.connect(remoteParam);
-            conn.on('open', () => {
-                $('remote-dot').className = 'connected';
-                $('remote-status-text').textContent = 'Connected';
-                /* ask host for current state */
-                conn.send({ cmd: 'getState' });
-            });
-            conn.on('close',  () => {
-                $('remote-dot').className = 'waiting';
-                $('remote-status-text').textContent = 'Disconnected — refresh to retry';
-            });
-            conn.on('error',  () => {
-                $('remote-dot').className = 'waiting';
-                $('remote-status-text').textContent = 'Connection error';
-            });
-            conn.on('data', d => {
+        client.on('connect', () => {
+            client.subscribe(stateTopic);
+            $('remote-dot').className = 'connected';
+            $('remote-status-text').textContent = 'Connected';
+            /* ask desktop to broadcast its current state */
+            client.publish(cmdTopic, JSON.stringify({ cmd: 'getState' }));
+        });
+        client.on('reconnect', () => {
+            $('remote-dot').className = 'waiting';
+            $('remote-status-text').textContent = 'Reconnecting…';
+        });
+        client.on('error', () => {
+            $('remote-dot').className = 'waiting';
+            $('remote-status-text').textContent = 'Connection error — check network';
+        });
+        client.on('message', (topic, msg) => {
+            try {
+                const d = JSON.parse(msg.toString());
                 if (d.type === 'state') {
-                    const pl = d.playing;
-                    $('remote-pp').textContent = pl ? '⏸' : '▶';
-                    $('remote-pp').classList.toggle('paused', !pl);
+                    $('remote-pp').textContent = d.playing ? '⏸' : '▶';
+                    $('remote-pp').classList.toggle('paused', !d.playing);
                     remoteSpeed = d.speed;
                     $('remote-spd-val').textContent = remoteSpeed;
                 }
-            });
-        });
-        peer.on('error', () => {
-            $('remote-dot').className = 'waiting';
-            $('remote-status-text').textContent = 'Could not reach host';
+            } catch(e) {}
         });
 
-        function send(obj) { if (conn && conn.open) conn.send(obj); }
+        function sendCmd(obj) {
+            client.publish(cmdTopic, JSON.stringify(obj));
+        }
 
-        $('remote-pp').addEventListener('click',     () => send({ cmd: 'togglePlay' }));
-        $('remote-up').addEventListener('click',     () => send({ cmd: 'scrollUp' }));
-        $('remote-down').addEventListener('click',   () => send({ cmd: 'scrollDown' }));
+        $('remote-pp').addEventListener('click',     () => sendCmd({ cmd: 'togglePlay' }));
+        $('remote-up').addEventListener('click',     () => sendCmd({ cmd: 'scrollUp' }));
+        $('remote-down').addEventListener('click',   () => sendCmd({ cmd: 'scrollDown' }));
         $('remote-spd-up').addEventListener('click', () => {
             remoteSpeed = Math.min(5, remoteSpeed + 1);
             $('remote-spd-val').textContent = remoteSpeed;
-            send({ cmd: 'speed', val: remoteSpeed });
+            sendCmd({ cmd: 'speed', val: remoteSpeed });
         });
         $('remote-spd-dn').addEventListener('click', () => {
             remoteSpeed = Math.max(1, remoteSpeed - 1);
             $('remote-spd-val').textContent = remoteSpeed;
-            send({ cmd: 'speed', val: remoteSpeed });
+            sendCmd({ cmd: 'speed', val: remoteSpeed });
         });
 
     } else {
         /* ── DESKTOP / HOST SIDE ── */
-        let hostPeer, hostConn, qrGenerated = false;
-        const actLight      = $('activity-light');
-        const remoteLabel   = $('remote-input-label');
+        let mqttClient, sessionId, qrGenerated = false;
+        const actLight    = $('activity-light');
+        const remoteLabel = $('remote-input-label');
 
         broadcastState = function () {
-            if (hostConn && hostConn.open) {
-                hostConn.send({ type: 'state', playing, speed });
+            if (mqttClient && mqttClient.connected && sessionId) {
+                mqttClient.publish(
+                    'tp/' + sessionId + '/state',
+                    JSON.stringify({ type: 'state', playing, speed }),
+                    { retain: true }   /* phone gets current state immediately on connect */
+                );
             }
         };
 
         function flashActivity() {
             actLight.classList.remove('flash');
-            void actLight.offsetWidth; /* reflow to restart */
+            void actLight.offsetWidth;
             actLight.classList.add('flash');
             setTimeout(() => actLight.classList.remove('flash'), 180);
         }
 
-        function initPeer(cb) {
-            if (hostPeer) { cb && cb(); return; }
-            hostPeer = new Peer(undefined, PEER_CFG);
-            hostPeer.on('open', id => {
-                const url = location.origin + location.pathname + '?remote=' + id;
+        function initSession(cb) {
+            if (mqttClient) { cb && cb(); return; }
+
+            sessionId  = Math.random().toString(36).slice(2, 10);
+            mqttClient = mqttConnect('host-' + sessionId);
+
+            mqttClient.on('connect', () => {
+                const cmdTopic = 'tp/' + sessionId + '/cmd';
+                mqttClient.subscribe(cmdTopic);
+                actLight.classList.remove('waiting');
+                actLight.classList.add('waiting');
+                remoteLabel.textContent = 'Waiting for phone…';
+
+                const url = location.origin + location.pathname + '?session=' + sessionId;
                 if (!qrGenerated) {
                     $('qr-url').textContent = url;
                     new QRCode($('qr-box'), { text: url, width: 220, height: 220, colorDark: '#000', colorLight: '#fff' });
                     qrGenerated = true;
-                    if (location.protocol !== 'https:') {
-                        $('qr-http-warn').style.display = 'block';
-                    }
                     $('qr-copy').addEventListener('click', () => {
                         navigator.clipboard.writeText(url).then(() => {
                             $('qr-copy').textContent = '✓ Copied!';
@@ -1357,60 +1363,37 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                         });
                     });
                 }
-                actLight.classList.add('waiting');
-                remoteLabel.textContent = 'Waiting for phone…';
                 cb && cb();
+            });
 
-                hostPeer.on('connection', c => {
-                    /* Wait for the data channel to actually open before trusting it */
-                    c.on('open', () => {
-                        hostConn = c;
-                        actLight.className = 'connected';
-                        remoteLabel.textContent = 'Remote connected';
-                        $('remote-conn-status').textContent = '● Phone connected';
-                        $('remote-conn-status').classList.add('live');
-                        broadcastState();
-                    });
-                    c.on('data', d => {
-                        /* Flash light for every incoming command */
-                        flashActivity();
-                        if (d.cmd === 'togglePlay')  togglePlay();
-                        if (d.cmd === 'scrollUp')    scroll = Math.max(0, scroll - JUMP);
-                        if (d.cmd === 'scrollDown')  scroll += JUMP;
-                        if (d.cmd === 'speed')       setSpeed(d.val);
-                        if (d.cmd === 'getState')    broadcastState();
-                    });
-                    c.on('close', () => {
-                        hostConn = null;
-                        actLight.className = 'waiting';
-                        remoteLabel.textContent = 'Remote disconnected';
-                        $('remote-conn-status').textContent = 'Waiting for phone to connect…';
-                        $('remote-conn-status').classList.remove('live');
-                    });
-                });
+            mqttClient.on('message', (topic, msg) => {
+                try {
+                    const d = JSON.parse(msg.toString());
+                    flashActivity();
+                    /* first command = phone is live */
+                    actLight.className = 'connected';
+                    remoteLabel.textContent = 'Remote connected';
+                    $('remote-conn-status').textContent = '● Phone connected';
+                    $('remote-conn-status').classList.add('live');
+
+                    if (d.cmd === 'togglePlay')  togglePlay();
+                    if (d.cmd === 'scrollUp')    scroll = Math.max(0, scroll - JUMP);
+                    if (d.cmd === 'scrollDown')  scroll += JUMP;
+                    if (d.cmd === 'speed')       setSpeed(d.val);
+                    if (d.cmd === 'getState')    broadcastState();
+                } catch(e) {}
             });
         }
 
-        /* Button on input screen */
-        $('input-remote-btn').addEventListener('click', () => {
-            initPeer(() => $('qr-modal').classList.add('active'));
-            if (hostPeer) $('qr-modal').classList.add('active');
-        });
+        function openModal() { $('qr-modal').classList.add('active'); }
 
-        /* Button in TP controls bar */
-        $('remote-btn').addEventListener('click', () => {
-            initPeer(() => $('qr-modal').classList.add('active'));
-            if (hostPeer) $('qr-modal').classList.add('active');
-        });
-
+        $('input-remote-btn').addEventListener('click', () => initSession(openModal) || (mqttClient && openModal()));
+        $('remote-btn').addEventListener('click',       () => initSession(openModal) || (mqttClient && openModal()));
         $('qr-close').addEventListener('click', () => $('qr-modal').classList.remove('active'));
 
-        /* Hide activity light once presentation mode starts */
-        const _enterTP = enterTP;
-        /* patch enterTP to hide the light */
         $('start-btn').addEventListener('click', () => {
-            actLight.style.display = 'none';
-            remoteLabel.style.display = 'none';
+            actLight.style.display       = 'none';
+            remoteLabel.style.display    = 'none';
             $('input-remote-btn').style.display = 'none';
         });
     }
