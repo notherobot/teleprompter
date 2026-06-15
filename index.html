@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Teleprompter</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -496,31 +496,39 @@
         /* ══════════════════════════════════════
            REMOTE CONTROL MODE (phone)
         ══════════════════════════════════════ */
+        /* Prevent double-tap zoom on all remote buttons */
+        #remote-screen button { touch-action: manipulation; }
+
         #remote-screen {
             display: none;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            height: 100vh;
+            align-items: stretch;
+            min-height: 100vh;
             background: #0a0a0a;
-            padding: 32px 24px 40px;
+            padding: 0 0 32px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            font-family: Arial, sans-serif;
         }
         #remote-screen.active { display: flex; }
 
-        .remote-status {
-            font-size: 0.7rem;
-            letter-spacing: 3px;
+        /* Status bar */
+        #remote-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 20px 10px;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
             color: #444;
+            border-bottom: 1px solid #111;
         }
-        .remote-status span { color: #ccc; }
         #remote-dot {
-            display: inline-block;
-            width: 7px; height: 7px;
+            width: 8px; height: 8px;
             border-radius: 50%;
             background: #333;
-            margin-right: 6px;
-            vertical-align: middle;
+            flex-shrink: 0;
             transition: background 0.3s;
         }
         #remote-dot.connected { background: #4cff72; box-shadow: 0 0 8px #4cff72; }
@@ -528,74 +536,126 @@
 
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+        /* Duration strip */
+        #remote-duration {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #111;
+        }
+        #remote-scrub-track {
+            position: relative;
+            height: 4px;
+            background: #1a1a1a;
+            border-radius: 2px;
+        }
+        #remote-scrub-fill {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            background: var(--accent);
+            border-radius: 2px;
+            opacity: 0.7;
+        }
+        #remote-scrub-head {
+            position: absolute;
+            top: 50%; margin-top: -8px; margin-left: -8px;
+            width: 16px; height: 16px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.5);
+            touch-action: none;
+        }
+        #remote-dur-labels {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            font-size: 0.62rem;
+            letter-spacing: 1.5px;
+            color: #555;
+            text-transform: uppercase;
+        }
+        .rdur-val { color: #ccc; font-weight: 700; }
+
+        /* Big play/pause */
         #remote-pp {
-            width: 180px; height: 180px;
+            margin: 20px auto;
+            width: 140px; height: 140px;
             border-radius: 50%;
             background: var(--accent);
             border: none;
             color: #000;
-            font-size: 3.2rem;
+            font-size: 2.8rem;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.12s, opacity 0.12s;
             flex-shrink: 0;
         }
-        #remote-pp:active { transform: scale(0.93); opacity: 0.8; }
+        #remote-pp:active { opacity: 0.75; }
         #remote-pp.paused { background: #1a1a1a; color: var(--accent); border: 3px solid var(--accent); }
 
-        .remote-row {
+        /* Sections */
+        .r-section {
+            padding: 14px 20px;
+            border-bottom: 1px solid #111;
             display: flex;
-            gap: 16px;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
+            flex-direction: column;
+            gap: 10px;
         }
-        .remote-btn {
-            flex: 1;
-            max-width: 120px;
-            height: 64px;
-            background: #141414;
-            border: 1px solid #252525;
-            border-radius: 12px;
-            color: #ccc;
-            font-family: Arial, sans-serif;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: background 0.1s;
-        }
-        .remote-btn:active { background: #252525; }
-
-        .remote-speed-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .remote-spd-lbl {
-            font-size: 0.65rem;
+        .r-lbl {
+            font-size: 0.6rem;
             letter-spacing: 2px;
             color: #444;
             text-transform: uppercase;
-            min-width: 50px;
-            text-align: center;
         }
-        #remote-spd-val {
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: var(--accent);
-            min-width: 24px;
-            text-align: center;
+        .r-row {
+            display: flex;
+            gap: 10px;
         }
-        .remote-spd-btn {
-            width: 48px; height: 48px;
+        /* Speed pills */
+        .r-spd {
+            flex: 1;
+            height: 48px;
             background: #141414;
-            border: 1px solid #252525;
-            border-radius: 10px;
+            border: 1px solid #222;
+            border-radius: 8px;
             color: #aaa;
-            font-size: 1.4rem;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background 0.1s;
         }
-        .remote-spd-btn:active { background: #252525; }
+        .r-spd:active, .r-spd.sel { background: var(--accent); border-color: var(--accent); color: #000; }
+
+        /* Generic action buttons */
+        .r-btn {
+            flex: 1;
+            height: 52px;
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 10px;
+            color: #ccc;
+            font-family: Arial, sans-serif;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+        .r-btn:active { background: #252525; }
+
+        /* Toggle buttons */
+        .r-toggle {
+            flex: 1;
+            height: 52px;
+            background: #141414;
+            border: 1px solid #222;
+            border-radius: 10px;
+            color: #666;
+            font-family: Arial, sans-serif;
+            font-size: 0.78rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .r-toggle.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+        .r-toggle:active { opacity: 0.75; }
 
         /* QR modal */
         #qr-modal {
@@ -684,7 +744,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v21</div>
+    <div class="version">v22</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -826,25 +886,70 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
      REMOTE CONTROL SCREEN (phone)
 ════════════════════════════════════════ -->
 <div id="remote-screen">
-    <div class="remote-status">
+    <!-- Status -->
+    <div id="remote-status-bar">
         <span id="remote-dot" class="waiting"></span>
         <span id="remote-status-text">Connecting…</span>
     </div>
 
-    <button id="remote-pp" class="paused">▶</button>
-
-    <div class="remote-row">
-        <button class="remote-btn" id="remote-up">↑</button>
-        <button class="remote-btn" id="remote-down">↓</button>
+    <!-- Duration scrubber -->
+    <div id="remote-duration">
+        <div id="remote-scrub-track">
+            <div id="remote-scrub-fill"></div>
+            <div id="remote-scrub-head"></div>
+        </div>
+        <div id="remote-dur-labels">
+            <span>Elapsed&nbsp;<span class="rdur-val" id="rdur-elapsed">0:00</span></span>
+            <span>·</span>
+            <span>Remaining&nbsp;<span class="rdur-val" id="rdur-remaining">—</span></span>
+            <span>·</span>
+            <span>Total&nbsp;<span class="rdur-val" id="rdur-total">—</span></span>
+        </div>
     </div>
 
-    <div class="remote-speed-row">
-        <button class="remote-spd-btn" id="remote-spd-dn">−</button>
-        <div>
-            <div class="remote-spd-lbl">Speed</div>
-            <div id="remote-spd-val">3</div>
+    <!-- Play / Pause -->
+    <button id="remote-pp" class="paused">▶</button>
+
+    <!-- Scroll nudge -->
+    <div class="r-section">
+        <div class="r-lbl">Scroll</div>
+        <div class="r-row">
+            <button class="r-btn" id="remote-up">↑ Back</button>
+            <button class="r-btn" id="remote-down">↓ Forward</button>
         </div>
-        <button class="remote-spd-btn" id="remote-spd-up">+</button>
+    </div>
+
+    <!-- Speed -->
+    <div class="r-section">
+        <div class="r-lbl">Speed</div>
+        <div class="r-row">
+            <button class="r-spd" data-s="1">1</button>
+            <button class="r-spd" data-s="2">2</button>
+            <button class="r-spd sel" data-s="3">3</button>
+            <button class="r-spd" data-s="4">4</button>
+            <button class="r-spd" data-s="5">5</button>
+        </div>
+    </div>
+
+    <!-- Text size -->
+    <div class="r-section">
+        <div class="r-lbl">Text Size</div>
+        <div class="r-row">
+            <button class="r-btn" id="remote-sz-dn">A −</button>
+            <button class="r-btn" id="remote-sz-up">A +</button>
+        </div>
+    </div>
+
+    <!-- Toggles -->
+    <div class="r-section">
+        <div class="r-lbl">Options</div>
+        <div class="r-row">
+            <button class="r-toggle on" id="remote-mirror">⇄ Mirror</button>
+            <button class="r-toggle on" id="remote-rotate">↻ Rotate</button>
+        </div>
+        <div class="r-row">
+            <button class="r-toggle on" id="remote-countdown">Countdown</button>
+        </div>
     </div>
 </div>
 
@@ -931,12 +1036,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('sz-up').addEventListener('click', () => setFontSize(fontSize + SZ_STEP));
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
     $('mirror-btn').addEventListener('click', toggleMirror);
-    $('cd-toggle-btn').addEventListener('click', () => {
-        cdEnabled = !cdEnabled;
-        const btn = $('cd-toggle-btn');
-        btn.textContent = cdEnabled ? 'On' : 'Off';
-        btn.classList.toggle('on', cdEnabled);
-    });
+    $('cd-toggle-btn').addEventListener('click', toggleCd);
     $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
@@ -982,9 +1082,8 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 return;
             }
             cdNum.textContent = n;
-            /* restart the pop animation */
             cdNum.style.animation = 'none';
-            cdNum.offsetHeight; /* reflow */
+            cdNum.offsetHeight;
             cdNum.style.animation = '';
             cdTimeout = setTimeout(tick, 1000);
         }
@@ -1041,13 +1140,15 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     function startRaf() {
         if (rafId) return;
         lastTs = null;
-        rafId = requestAnimationFrame(tick);
+        rafId = requestAnimationFrame(loop);
     }
     function stopRaf() {
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
     }
-    function tick(ts) {
-        rafId = requestAnimationFrame(tick);
+
+    let lastBroadcast = 0;
+    function loop(ts) {
+        rafId = requestAnimationFrame(loop);
         const dt = lastTs === null ? 0 : ts - lastTs;
         lastTs = ts;
         if (playing && dt > 0) {
@@ -1059,6 +1160,11 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             }
         }
         render();
+        /* broadcast progress to phone every 500 ms while playing */
+        if (playing && broadcastState && ts - lastBroadcast > 500) {
+            lastBroadcast = ts;
+            broadcastState();
+        }
     }
 
     function togglePlay() {
@@ -1084,12 +1190,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         document.querySelectorAll('.spd-btn').forEach(b =>
             b.classList.toggle('sel', +b.dataset.s === s)
         );
+        if (broadcastState) broadcastState();
     }
 
     function toggleMirror() {
         mirrored = !mirrored;
         $('mirror-btn').classList.toggle('on', mirrored);
         render();
+        if (broadcastState) broadcastState();
     }
 
     function toggleRotate() {
@@ -1097,11 +1205,21 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         tpInner.classList.toggle('rotated', rotated);
         $('rotate-btn').classList.toggle('on', rotated);
         placeIndicators();
+        if (broadcastState) broadcastState();
+    }
+
+    function toggleCd() {
+        cdEnabled = !cdEnabled;
+        const btn = $('cd-toggle-btn');
+        btn.textContent = cdEnabled ? 'On' : 'Off';
+        btn.classList.toggle('on', cdEnabled);
+        if (broadcastState) broadcastState();
     }
 
     function setFontSize(sz) {
         fontSize = Math.min(SZ_MAX, Math.max(SZ_MIN, sz));
         tpText.style.fontSize = fontSize + 'rem';
+        if (broadcastState) broadcastState();
     }
 
     document.addEventListener('keydown', e => {
@@ -1153,7 +1271,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         syncPP();
     });
 
-    /* Touch support */
     scrubTrack.addEventListener('touchstart', e => {
         sDrag = true;
         wasPlaying = playing;
@@ -1239,9 +1356,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     /* ══════════════════════════════════════
        MQTT SHARED-STATE REMOTE CONTROL
-       Both devices connect to the same
-       topic on a free public broker —
-       no P2P handshake required.
     ══════════════════════════════════════ */
     const sessionParam = new URLSearchParams(location.search).get('session');
     const isRemote     = !!sessionParam;
@@ -1266,7 +1380,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         const sessionId  = sessionParam;
         const stateTopic = 'tp/' + sessionId + '/state';
         const cmdTopic   = 'tp/' + sessionId + '/cmd';
-        let remoteSpeed  = 3;
 
         const client = mqttConnect('remote-' + Math.random().toString(36).slice(2));
 
@@ -1274,7 +1387,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             client.subscribe(stateTopic);
             $('remote-dot').className = 'connected';
             $('remote-status-text').textContent = 'Connected';
-            /* ask desktop to broadcast its current state */
             client.publish(cmdTopic, JSON.stringify({ cmd: 'getState' }));
         });
         client.on('reconnect', () => {
@@ -1285,35 +1397,88 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             $('remote-dot').className = 'waiting';
             $('remote-status-text').textContent = 'Connection error — check network';
         });
+
         client.on('message', (topic, msg) => {
             try {
                 const d = JSON.parse(msg.toString());
-                if (d.type === 'state') {
-                    $('remote-pp').textContent = d.playing ? '⏸' : '▶';
-                    $('remote-pp').classList.toggle('paused', !d.playing);
-                    remoteSpeed = d.speed;
-                    $('remote-spd-val').textContent = remoteSpeed;
+                if (d.type !== 'state') return;
+
+                /* Play/pause button */
+                $('remote-pp').textContent = d.playing ? '⏸' : '▶';
+                $('remote-pp').classList.toggle('paused', !d.playing);
+
+                /* Speed pills */
+                if (d.speed != null) {
+                    document.querySelectorAll('.r-spd').forEach(b =>
+                        b.classList.toggle('sel', +b.dataset.s === d.speed));
                 }
+
+                /* Toggle buttons */
+                if (d.mirrored  != null) $('remote-mirror').classList.toggle('on', d.mirrored);
+                if (d.rotated   != null) $('remote-rotate').classList.toggle('on', d.rotated);
+                if (d.cdEnabled != null) $('remote-countdown').classList.toggle('on', d.cdEnabled);
+
+                /* Duration scrubber */
+                if (d.progress != null) {
+                    $('remote-scrub-fill').style.width = (d.progress * 100) + '%';
+                    $('remote-scrub-head').style.left  = (d.progress * 100) + '%';
+                }
+                if (d.elapsed)   $('rdur-elapsed').textContent   = d.elapsed;
+                if (d.remaining) $('rdur-remaining').textContent = d.remaining;
+                if (d.total)     $('rdur-total').textContent     = d.total;
             } catch(e) {}
         });
 
         function sendCmd(obj) {
-            client.publish(cmdTopic, JSON.stringify(obj));
+            if (client.connected) client.publish(cmdTopic, JSON.stringify(obj));
         }
 
-        $('remote-pp').addEventListener('click',     () => sendCmd({ cmd: 'togglePlay' }));
-        $('remote-up').addEventListener('click',     () => sendCmd({ cmd: 'scrollUp' }));
-        $('remote-down').addEventListener('click',   () => sendCmd({ cmd: 'scrollDown' }));
-        $('remote-spd-up').addEventListener('click', () => {
-            remoteSpeed = Math.min(5, remoteSpeed + 1);
-            $('remote-spd-val').textContent = remoteSpeed;
-            sendCmd({ cmd: 'speed', val: remoteSpeed });
+        /* Play/pause */
+        $('remote-pp').addEventListener('click', () => sendCmd({ cmd: 'togglePlay' }));
+
+        /* Scroll nudge */
+        $('remote-up').addEventListener('click',   () => sendCmd({ cmd: 'scrollUp' }));
+        $('remote-down').addEventListener('click', () => sendCmd({ cmd: 'scrollDown' }));
+
+        /* Speed pills */
+        document.querySelectorAll('.r-spd').forEach(b =>
+            b.addEventListener('click', () => sendCmd({ cmd: 'speed', val: +b.dataset.s })));
+
+        /* Text size */
+        $('remote-sz-up').addEventListener('click', () => sendCmd({ cmd: 'fontSize', delta: SZ_STEP }));
+        $('remote-sz-dn').addEventListener('click', () => sendCmd({ cmd: 'fontSize', delta: -SZ_STEP }));
+
+        /* Toggles */
+        $('remote-mirror').addEventListener('click',    () => sendCmd({ cmd: 'toggleMirror' }));
+        $('remote-rotate').addEventListener('click',    () => sendCmd({ cmd: 'toggleRotate' }));
+        $('remote-countdown').addEventListener('click', () => sendCmd({ cmd: 'toggleCd' }));
+
+        /* Remote scrubber drag */
+        const rScrubTrack = $('remote-scrub-track');
+        let rsDrag = false;
+
+        function remoteScrubTo(clientX) {
+            const rect = rScrubTrack.getBoundingClientRect();
+            const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            $('remote-scrub-fill').style.width = (pct * 100) + '%';
+            $('remote-scrub-head').style.left  = (pct * 100) + '%';
+            sendCmd({ cmd: 'scrubTo', pct });
+        }
+
+        rScrubTrack.addEventListener('mousedown', e => {
+            rsDrag = true; remoteScrubTo(e.clientX); e.preventDefault();
         });
-        $('remote-spd-dn').addEventListener('click', () => {
-            remoteSpeed = Math.max(1, remoteSpeed - 1);
-            $('remote-spd-val').textContent = remoteSpeed;
-            sendCmd({ cmd: 'speed', val: remoteSpeed });
-        });
+        document.addEventListener('mousemove', e => { if (rsDrag) remoteScrubTo(e.clientX); });
+        document.addEventListener('mouseup',   () => { rsDrag = false; });
+
+        rScrubTrack.addEventListener('touchstart', e => {
+            rsDrag = true; remoteScrubTo(e.touches[0].clientX); e.preventDefault();
+        }, { passive: false });
+        rScrubTrack.addEventListener('touchmove', e => {
+            if (!rsDrag) return;
+            remoteScrubTo(e.touches[0].clientX); e.preventDefault();
+        }, { passive: false });
+        rScrubTrack.addEventListener('touchend', () => { rsDrag = false; });
 
     } else {
         /* ── DESKTOP / HOST SIDE ── */
@@ -1322,13 +1487,24 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         const remoteLabel = $('remote-input-label');
 
         broadcastState = function () {
-            if (mqttClient && mqttClient.connected && sessionId) {
-                mqttClient.publish(
-                    'tp/' + sessionId + '/state',
-                    JSON.stringify({ type: 'state', playing, speed }),
-                    { retain: true }   /* phone gets current state immediately on connect */
-                );
-            }
+            if (!mqttClient || !mqttClient.connected || !sessionId) return;
+            const maxS       = Math.max(1, tpText.scrollHeight || 1);
+            const pct        = Math.min(1, scroll / maxS);
+            const pxPerSec   = SPD[speed];
+            const totalSec   = maxS / pxPerSec;
+            const elapsedSec = scroll / pxPerSec;
+            mqttClient.publish(
+                'tp/' + sessionId + '/state',
+                JSON.stringify({
+                    type: 'state',
+                    playing, speed, fontSize, mirrored, rotated, cdEnabled,
+                    progress:  pct,
+                    elapsed:   fmt(elapsedSec),
+                    remaining: fmt(Math.max(0, totalSec - elapsedSec)),
+                    total:     fmt(totalSec)
+                }),
+                { retain: true }
+            );
         };
 
         function flashActivity() {
@@ -1370,7 +1546,6 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 try {
                     const d = JSON.parse(msg.toString());
                     flashActivity();
-                    /* first command = phone is live */
                     actLight.className = 'connected';
                     remoteLabel.textContent = 'Remote connected';
                     $('remote-conn-status').textContent = '● Phone connected';
@@ -1380,7 +1555,16 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                     if (d.cmd === 'scrollUp')    scroll = Math.max(0, scroll - JUMP);
                     if (d.cmd === 'scrollDown')  scroll += JUMP;
                     if (d.cmd === 'speed')       setSpeed(d.val);
-                    if (d.cmd === 'getState')    broadcastState();
+                    if (d.cmd === 'fontSize')    setFontSize(fontSize + d.delta);
+                    if (d.cmd === 'toggleMirror') toggleMirror();
+                    if (d.cmd === 'toggleRotate') toggleRotate();
+                    if (d.cmd === 'toggleCd')    toggleCd();
+                    if (d.cmd === 'scrubTo') {
+                        scroll = d.pct * tpText.scrollHeight;
+                        lastTs = null;
+                        broadcastState();
+                    }
+                    if (d.cmd === 'getState') broadcastState();
                 } catch(e) {}
             });
         }
