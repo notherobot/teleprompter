@@ -622,7 +622,7 @@
             max-width: 300px;
             word-break: break-all;
         }
-        #qr-close {
+        #qr-close, #qr-copy {
             padding: 10px 32px;
             background: transparent;
             border: 1px solid #333;
@@ -632,7 +632,7 @@
             font-size: 0.85rem;
             cursor: pointer;
         }
-        #qr-close:hover { border-color: #666; color: #fff; }
+        #qr-close:hover, #qr-copy:hover { border-color: #666; color: #fff; }
         #remote-conn-status {
             font-size: 0.68rem;
             color: #444;
@@ -684,7 +684,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">◀ Teleprompter ▶</div>
-    <div class="version">v19</div>
+    <div class="version">v20</div>
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
@@ -853,7 +853,11 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     <div id="qr-box"></div>
     <div id="qr-url"></div>
     <div id="remote-conn-status">Waiting for phone to connect…</div>
+    <button id="qr-copy">⎘ Copy link</button>
     <button id="qr-close">✕ Close</button>
+    <div id="qr-http-warn" style="display:none;font-size:0.65rem;color:#ff6b6b;letter-spacing:1px;text-align:center;max-width:280px">
+        ⚠ Page must be served over HTTPS for WebRTC to work on mobile browsers
+    </div>
 </div>
 
 <script>
@@ -1239,6 +1243,24 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     const remoteParam = new URLSearchParams(location.search).get('remote');
     const isRemote    = !!remoteParam;
 
+    const PEER_CFG = {
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                {
+                    urls: [
+                        'turn:openrelay.metered.ca:80',
+                        'turn:openrelay.metered.ca:443',
+                        'turn:openrelay.metered.ca:443?transport=tcp'
+                    ],
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ]
+        }
+    };
+
     if (isRemote) {
         /* ── PHONE / REMOTE SIDE ── */
         inputScr.style.display  = 'none';
@@ -1247,11 +1269,11 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
         let remoteSpeed   = 3;
 
-        const peer = new Peer();
+        const peer = new Peer(undefined, PEER_CFG);
         let conn;
 
         peer.on('open', () => {
-            conn = peer.connect(remoteParam, { reliable: true });
+            conn = peer.connect(remoteParam);
             conn.on('open', () => {
                 $('remote-dot').className = 'connected';
                 $('remote-status-text').textContent = 'Connected';
@@ -1318,13 +1340,22 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
         function initPeer(cb) {
             if (hostPeer) { cb && cb(); return; }
-            hostPeer = new Peer();
+            hostPeer = new Peer(undefined, PEER_CFG);
             hostPeer.on('open', id => {
                 const url = location.origin + location.pathname + '?remote=' + id;
                 if (!qrGenerated) {
                     $('qr-url').textContent = url;
                     new QRCode($('qr-box'), { text: url, width: 220, height: 220, colorDark: '#000', colorLight: '#fff' });
                     qrGenerated = true;
+                    if (location.protocol !== 'https:') {
+                        $('qr-http-warn').style.display = 'block';
+                    }
+                    $('qr-copy').addEventListener('click', () => {
+                        navigator.clipboard.writeText(url).then(() => {
+                            $('qr-copy').textContent = '✓ Copied!';
+                            setTimeout(() => { $('qr-copy').textContent = '⎘ Copy link'; }, 2000);
+                        });
+                    });
                 }
                 actLight.classList.add('waiting');
                 remoteLabel.textContent = 'Waiting for phone…';
