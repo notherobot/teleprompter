@@ -736,9 +736,9 @@
             font-family: Tahoma, "MS Sans Serif", sans-serif !important;
         }
         .win95 #remote-status-bar {
-            background: linear-gradient(to right, #1084d0 0%, #0a0090 100%);
+            background: linear-gradient(to right, #0a246a 0%, #a6caf0 100%);
             color: #fff;
-            border-bottom: 2px solid #0a0090;
+            border-bottom: 2px solid #0a246a;
             letter-spacing: 0;
             font-size: 0.85rem;
             font-weight: 700;
@@ -1161,7 +1161,7 @@
         </div>
     </div>
 
-    <button id="win95-toggle">[ Win98 Mode ]</button>
+    <button id="win95-toggle">[ Win2K Mode ]</button>
 </div>
 
 <!-- QR Modal -->
@@ -1703,7 +1703,7 @@
         $('win95-toggle').addEventListener('click', () => {
             const rs = $('remote-screen');
             const on = rs.classList.toggle('win95');
-            $('win95-toggle').textContent = on ? '[ X ] Exit Win98 Mode' : '[ Win98 Mode ]';
+            $('win95-toggle').textContent = on ? '[ X ] Exit Win2K Mode' : '[ Win2K Mode ]';
         });
 
         /* Remote scrubber drag */
