@@ -722,8 +722,29 @@
             justify-content: center;
             flex-direction: column;
             gap: 18px;
+            transition: opacity 0.6s ease;
         }
         #qr-modal.active { display: flex; }
+        #qr-modal.fading { opacity: 0; pointer-events: none; }
+
+        #qr-connected-banner {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #qr-connected-banner.visible { display: flex; }
+        #qr-connected-icon {
+            font-size: 3.5rem;
+            line-height: 1;
+        }
+        #qr-connected-text {
+            font-size: 1rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #4cff72;
+            font-weight: 700;
+        }
         #qr-box {
             background: #fff;
             padding: 20px;
@@ -1015,6 +1036,10 @@
 
 <!-- QR Modal -->
 <div id="qr-modal">
+    <div id="qr-connected-banner">
+        <div id="qr-connected-icon">✓</div>
+        <div id="qr-connected-text">Remote Connected</div>
+    </div>
     <div id="qr-box"></div>
     <div id="qr-url"></div>
     <div id="remote-conn-status">Waiting for phone to connect…</div>
@@ -1630,6 +1655,7 @@
                 cb && cb();
             });
 
+            let remoteEverConnected = false;
             mqttClient.on('message', (topic, msg) => {
                 try {
                     const d = JSON.parse(msg.toString());
@@ -1638,6 +1664,29 @@
                     remoteLabel.textContent = 'Remote connected';
                     $('remote-conn-status').textContent = '● Phone connected';
                     $('remote-conn-status').classList.add('live');
+
+                    if (!remoteEverConnected) {
+                        remoteEverConnected = true;
+                        const modal = $('qr-modal');
+                        if (modal.classList.contains('active')) {
+                            $('qr-connected-banner').classList.add('visible');
+                            $('qr-box').style.display = 'none';
+                            $('qr-url').style.display = 'none';
+                            $('qr-copy').style.display = 'none';
+                            $('remote-conn-status').style.display = 'none';
+                            setTimeout(() => {
+                                modal.classList.add('fading');
+                                setTimeout(() => {
+                                    modal.classList.remove('active', 'fading');
+                                    $('qr-connected-banner').classList.remove('visible');
+                                    $('qr-box').style.display = '';
+                                    $('qr-url').style.display = '';
+                                    $('qr-copy').style.display = '';
+                                    $('remote-conn-status').style.display = '';
+                                }, 650);
+                            }, 1000);
+                        }
+                    }
 
                     if (d.cmd === 'togglePlay')  togglePlay();
                     if (d.cmd === 'scrollUp')    scroll = Math.max(0, scroll - JUMP);
