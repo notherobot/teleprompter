@@ -104,7 +104,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-top: 18px;
         }
         .color-picker-lbl {
             font-size: 0.62rem;
@@ -123,10 +122,18 @@
         .swatch:hover { transform: scale(1.2); }
         .swatch.active { border-color: #555; transform: scale(1.15); }
 
+        .input-controls-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 18px 28px;
+            margin-bottom: 14px;
+            width: min(820px, 100%);
+        }
+
         .key-hints {
             display: flex;
             gap: 22px;
-            margin-top: 16px;
             color: #252525;
             font-size: 0.72rem;
         }
@@ -139,6 +146,26 @@
             font-family: Arial, sans-serif;
             margin-right: 3px;
         }
+
+        .input-cd-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-cd-toggle {
+            padding: 4px 14px;
+            background: #131313;
+            border: 1px solid #252525;
+            border-radius: 5px;
+            color: #666;
+            font-family: Arial, sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+        }
+        .input-cd-toggle.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
 
         /* Remote connect row on input screen */
         .remote-row-input {
@@ -751,25 +778,32 @@
     <h1>YOUR SCRIPT</h1>
     <p class="sub">Paste your script below, then enter Presentation Mode</p>
 
+    <div class="input-controls-row">
+        <div class="key-hints">
+            <span><kbd>SPACE</kbd>play / pause</span>
+            <span><kbd>↑ ↓</kbd>navigate</span>
+            <span><kbd>1 – 5</kbd>set speed</span>
+        </div>
+
+        <div class="color-picker">
+            <span class="color-picker-lbl">Color</span>
+            <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
+            <button class="swatch" data-color="#ffdd00" style="background:#ffdd00" title="Yellow"></button>
+            <button class="swatch" data-color="#39ff14" style="background:#39ff14" title="Neon Green"></button>
+            <button class="swatch" data-color="#00ffff" style="background:#00ffff" title="Cyan"></button>
+        </div>
+
+        <div class="input-cd-row">
+            <span class="color-picker-lbl">Countdown</span>
+            <button id="input-cd-btn" class="input-cd-toggle on">On</button>
+        </div>
+    </div>
+
     <textarea id="script-input" placeholder="Paste your script here…
 Text scrolls automatically at your chosen speed.
 SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textarea>
 
     <button id="start-btn">▶ Presentation Mode</button>
-
-    <div class="color-picker">
-        <span class="color-picker-lbl">Color</span>
-        <button class="swatch active" data-color="#ffffff" style="background:#ffffff" title="White"></button>
-        <button class="swatch" data-color="#ffdd00" style="background:#ffdd00" title="Yellow"></button>
-        <button class="swatch" data-color="#39ff14" style="background:#39ff14" title="Neon Green"></button>
-        <button class="swatch" data-color="#00ffff" style="background:#00ffff" title="Cyan"></button>
-    </div>
-
-    <div class="key-hints">
-        <span><kbd>SPACE</kbd>play / pause</span>
-        <span><kbd>↑ ↓</kbd>navigate</span>
-        <span><kbd>1 – 5</kbd>set speed</span>
-    </div>
 
     <div class="remote-row-input">
         <button id="input-remote-btn">📱 Connect Remote</button>
@@ -1040,6 +1074,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
     $('mirror-btn').addEventListener('click', toggleMirror);
     $('cd-toggle-btn').addEventListener('click', toggleCd);
+    $('input-cd-btn').addEventListener('click', toggleCd);
     $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
@@ -1226,6 +1261,9 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         const btn = $('cd-toggle-btn');
         btn.textContent = cdEnabled ? 'On' : 'Off';
         btn.classList.toggle('on', cdEnabled);
+        const ibtn = $('input-cd-btn');
+        ibtn.textContent = cdEnabled ? 'On' : 'Off';
+        ibtn.classList.toggle('on', cdEnabled);
         if (broadcastState) broadcastState();
     }
 
