@@ -733,22 +733,22 @@
 
         .win95 {
             background: #c0c0c0 !important;
-            font-family: "MS Sans Serif", Tahoma, sans-serif !important;
+            font-family: Tahoma, "MS Sans Serif", sans-serif !important;
         }
         .win95 #remote-status-bar {
-            background: #000080;
+            background: linear-gradient(to right, #1084d0 0%, #0a0090 100%);
             color: #fff;
-            border-bottom: 3px solid #808080;
+            border-bottom: 2px solid #0a0090;
             letter-spacing: 0;
             font-size: 0.85rem;
             font-weight: 700;
             padding: 8px 10px;
-            font-family: "MS Sans Serif", Tahoma, sans-serif;
+            font-family: Tahoma, "MS Sans Serif", sans-serif;
         }
         .win95 #remote-dot.connected { background: #00ff00; box-shadow: none; }
         .win95 #remote-dot.waiting   { background: #ffff00; box-shadow: none; animation: none; }
         .win95 .r-section { border-bottom: 1px solid #808080; background: #c0c0c0; }
-        .win95 .r-lbl { color: #000; font-weight: 700; font-size: 0.7rem; letter-spacing: 1px; font-family: "MS Sans Serif", Tahoma, sans-serif; }
+        .win95 .r-lbl { color: #000; font-weight: 700; font-size: 0.7rem; letter-spacing: 1px; font-family: Tahoma, "MS Sans Serif", sans-serif; }
 
         /* Raised button base */
         .win95 .r-btn,
@@ -760,7 +760,7 @@
             border: none;
             border-radius: 0 !important;
             color: #000;
-            font-family: "MS Sans Serif", Tahoma, sans-serif;
+            font-family: Tahoma, "MS Sans Serif", sans-serif;
             box-shadow:
                 inset  1px  1px 0 #fff,
                 inset -1px -1px 0 #808080,
@@ -831,7 +831,7 @@
             box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #404040;
         }
         .win95 #remote-dur-labels { color: #444; }
-        .win95 .rdur-val { color: #000080; font-family: "MS Sans Serif", Tahoma, sans-serif; }
+        .win95 .rdur-val { color: #000080; font-family: Tahoma, "MS Sans Serif", sans-serif; }
         .win95 #win95-toggle {
             color: #000;
             letter-spacing: 1px;
@@ -1161,7 +1161,7 @@
         </div>
     </div>
 
-    <button id="win95-toggle">[ Win95 Mode ]</button>
+    <button id="win95-toggle">[ Win98 Mode ]</button>
 </div>
 
 <!-- QR Modal -->
@@ -1703,7 +1703,7 @@
         $('win95-toggle').addEventListener('click', () => {
             const rs = $('remote-screen');
             const on = rs.classList.toggle('win95');
-            $('win95-toggle').textContent = on ? '[ X ] Exit Win95 Mode' : '[ Win95 Mode ]';
+            $('win95-toggle').textContent = on ? '[ X ] Exit Win98 Mode' : '[ Win98 Mode ]';
         });
 
         /* Remote scrubber drag */
