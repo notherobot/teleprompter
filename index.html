@@ -398,8 +398,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 10px;
-            position: relative;
             flex-shrink: 0;
         }
 
@@ -479,8 +479,7 @@
         }
 
         #edit-btn {
-            position: absolute;
-            right: 16px;
+            margin-left: auto;
             padding: 6px 14px;
             background: transparent;
             border: 1px solid #444;
@@ -782,7 +781,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     <div id="tp-stage">
         <div id="tp-frame">
             <div id="tp-drag">✥</div>
-            <div id="tp-arrow">▶</div>
+            <div id="tp-arrow"><svg width="22" height="30" viewBox="0 0 22 30" fill="currentColor"><polygon points="0,0 22,15 0,30"/></svg></div>
             <div id="tp-vp">
                 <div id="tp-inner">
                     <div id="tp-line"></div>
@@ -908,7 +907,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     </div>
 
     <!-- Play / Pause -->
-    <button id="remote-pp" class="paused">▶</button>
+    <button id="remote-pp" class="paused">&#9654;</button>
 
     <!-- Scroll nudge -->
     <div class="r-section">
@@ -1402,7 +1401,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 if (d.type !== 'state') return;
 
                 /* Play/pause button */
-                $('remote-pp').textContent = d.playing ? '⏸' : '▶';
+                $('remote-pp').textContent = d.playing ? '||' : '▶';
                 $('remote-pp').classList.toggle('paused', !d.playing);
 
                 /* Speed pills */
