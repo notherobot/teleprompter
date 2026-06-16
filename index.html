@@ -799,7 +799,7 @@
 ════════════════════════════════════════ -->
 <div id="input-screen">
     <div class="brand">Teleprompter</div>
-    <div class="version">v24</div>
+    <div class="version">v25</div>
     <div class="input-controls-row">
         <div class="key-hints">
             <span><kbd>SPACE</kbd>play / pause</span>
@@ -818,7 +818,7 @@
         <div class="input-cd-row">
             <span class="color-picker-lbl">Countdown</span>
             <button id="input-cd-dn" class="cd-adj-btn">−</button>
-            <span id="input-cd-val">5s</span>
+            <span id="input-cd-val">3s</span>
             <button id="input-cd-up" class="cd-adj-btn">+</button>
         </div>
     </div>
@@ -1046,7 +1046,7 @@
     let rotated  = true;
     let rDrag = false, rX0, rY0, rW0, rH0;
     let cdTimeout  = null;
-    let cdSeconds  = 5;
+    let cdSeconds  = 3;
 
     const $ = id => document.getElementById(id);
     const inputScr = $('input-screen');
