@@ -1133,7 +1133,7 @@
     </div>
 
     <!-- Play / Pause -->
-    <button id="remote-pp" class="paused">&#9654;</button>
+    <button id="remote-pp" class="paused">&#9654;&#xFE0E;</button>
 
     <!-- Duration scrubber -->
     <div id="remote-duration">
@@ -1641,7 +1641,7 @@
                 if (d.type !== 'state') return;
 
                 /* Play/pause button */
-                $('remote-pp').textContent = d.playing ? '||' : '▶';
+                $('remote-pp').textContent = d.playing ? '||' : '▶︎';
                 $('remote-pp').classList.toggle('paused', !d.playing);
 
                 /* Speed pills */
