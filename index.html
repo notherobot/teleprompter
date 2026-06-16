@@ -732,110 +732,102 @@
         #win95-toggle:hover { color: #aaa; border-color: #444; }
 
         .win95 {
-            background: #c0c0c0 !important;
+            background: #ece9d8 !important;
             font-family: Tahoma, "MS Sans Serif", sans-serif !important;
         }
         .win95 #remote-status-bar {
-            background: linear-gradient(to right, #0a246a 0%, #a6caf0 100%);
+            background: linear-gradient(to bottom,
+                #1e5bce 0%, #3a7bd5 8%, #2b6dd4 50%,
+                #1a56c8 51%, #1652c0 90%, #1250bc 100%);
             color: #fff;
-            border-bottom: 2px solid #0a246a;
+            border-bottom: none;
             letter-spacing: 0;
             font-size: 0.85rem;
             font-weight: 700;
             padding: 8px 10px;
             font-family: Tahoma, "MS Sans Serif", sans-serif;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
-        .win95 #remote-dot.connected { background: #00ff00; box-shadow: none; }
-        .win95 #remote-dot.waiting   { background: #ffff00; box-shadow: none; animation: none; }
-        .win95 .r-section { border-bottom: 1px solid #808080; background: #c0c0c0; }
-        .win95 .r-lbl { color: #000; font-weight: 700; font-size: 0.7rem; letter-spacing: 1px; font-family: Tahoma, "MS Sans Serif", sans-serif; }
+        .win95 #remote-dot.connected { background: #00cc00; box-shadow: none; }
+        .win95 #remote-dot.waiting   { background: #ffcc00; box-shadow: none; animation: none; }
+        .win95 .r-section { border-bottom: 1px solid #d4d0c8; background: #ece9d8; }
+        .win95 .r-lbl { color: #000; font-size: 0.72rem; letter-spacing: 0; font-family: Tahoma, sans-serif; font-weight: 400; }
 
-        /* Raised button base */
+        /* XP-style buttons: rounded, gradient, border */
         .win95 .r-btn,
         .win95 .r-spd,
         .win95 .r-toggle,
         .win95 #remote-pp,
         .win95 #win95-toggle {
-            background: #c0c0c0;
-            border: none;
-            border-radius: 0 !important;
+            background: linear-gradient(to bottom, #f4f2ec 0%, #dbd7ca 100%);
+            border: 1px solid #8e8c82 !important;
+            border-radius: 3px !important;
             color: #000;
-            font-family: Tahoma, "MS Sans Serif", sans-serif;
-            box-shadow:
-                inset  1px  1px 0 #fff,
-                inset -1px -1px 0 #808080,
-                inset  2px  2px 0 #dfdfdf,
-                inset -2px -2px 0 #404040;
+            font-family: Tahoma, sans-serif;
+            box-shadow: none;
         }
 
-        /* Pressed state — invert bevel, nudge content */
+        /* XP pressed: darken, slight inset */
         .win95 .r-btn:active,
         .win95 .r-spd:active,
         .win95 .r-toggle:active,
         .win95 #remote-pp:active,
         .win95 #win95-toggle:active {
-            box-shadow:
-                inset  1px  1px 0 #404040,
-                inset -1px -1px 0 #dfdfdf,
-                inset  2px  2px 0 #808080,
-                inset -2px -2px 0 #fff;
+            background: linear-gradient(to bottom, #c8c5b8 0%, #dbd7ca 100%);
+            border-color: #6e6c62 !important;
             padding-top: 4px;
             padding-left: 4px;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .win95 .r-spd.sel {
-            background: #000080;
+            background: linear-gradient(to bottom, #2e6cc8 0%, #1a56b0 100%);
             color: #fff;
-            box-shadow:
-                inset  1px  1px 0 #404040,
-                inset -1px -1px 0 #4040c0,
-                inset  2px  2px 0 #000060,
-                inset -2px -2px 0 #6060ff;
+            border-color: #1a4a9a !important;
+            box-shadow: none;
         }
         .win95 .r-toggle.on {
-            background: #000080;
+            background: linear-gradient(to bottom, #2e6cc8 0%, #1a56b0 100%);
             color: #fff;
             font-weight: 700;
-            box-shadow:
-                inset  1px  1px 0 #404040,
-                inset -1px -1px 0 #4040c0,
-                inset  2px  2px 0 #000060,
-                inset -2px -2px 0 #6060ff;
+            border-color: #1a4a9a !important;
+            box-shadow: none;
         }
-        .win95 .r-toggle .cd-lbl { opacity: 1; color: rgba(0,0,128,0.6); }
-        .win95 .r-toggle.on .cd-lbl { color: rgba(255,255,255,0.7); }
+        .win95 .r-toggle .cd-lbl { opacity: 0.8; color: inherit; }
+        .win95 .r-toggle.on .cd-lbl { color: rgba(255,255,255,0.8); }
 
         .win95 #remote-pp {
             width: 120px; height: 120px;
-            border-radius: 0 !important;
+            border-radius: 6px !important;
             font-size: 2rem;
             color: #000;
         }
         .win95 #remote-pp.paused {
-            background: #c0c0c0;
+            background: linear-gradient(to bottom, #f4f2ec 0%, #dbd7ca 100%);
             color: #000;
-            border: none;
         }
         .win95 #remote-duration {
-            background: #c0c0c0;
-            border: none;
-            box-shadow: inset 1px 1px 0 #808080, inset -1px -1px 0 #fff;
+            background: #fff;
+            border: 1px solid #8e8c82;
+            border-radius: 3px;
             margin: 10px;
             padding: 10px;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1);
         }
-        .win95 #remote-scrub-track { background: #808080; box-shadow: inset 1px 1px 0 #404040; }
-        .win95 #remote-scrub-fill  { background: #000080; opacity: 1; }
+        .win95 #remote-scrub-track { background: #d4d0c8; border-radius: 2px; }
+        .win95 #remote-scrub-fill  { background: #316ac5; opacity: 1; border-radius: 2px; }
         .win95 #remote-scrub-head  {
-            background: #c0c0c0;
-            border-radius: 0;
-            box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #404040;
+            background: linear-gradient(to bottom, #5a9ae0 0%, #2b6dd4 100%);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
-        .win95 #remote-dur-labels { color: #444; }
-        .win95 .rdur-val { color: #000080; font-family: Tahoma, "MS Sans Serif", sans-serif; }
+        .win95 #remote-dur-labels { color: #555; }
+        .win95 .rdur-val { color: #316ac5; font-family: Tahoma, sans-serif; }
         .win95 #win95-toggle {
-            color: #000;
-            letter-spacing: 1px;
-            font-size: 0.65rem;
+            color: #444;
+            letter-spacing: 0;
+            font-size: 0.72rem;
+            background: linear-gradient(to bottom, #f4f2ec 0%, #dbd7ca 100%);
         }
 
         /* QR modal */
@@ -1161,7 +1153,7 @@
         </div>
     </div>
 
-    <button id="win95-toggle">[ Win2K Mode ]</button>
+    <button id="win95-toggle">Windows XP Mode</button>
 </div>
 
 <!-- QR Modal -->
@@ -1703,7 +1695,7 @@
         $('win95-toggle').addEventListener('click', () => {
             const rs = $('remote-screen');
             const on = rs.classList.toggle('win95');
-            $('win95-toggle').textContent = on ? '[ X ] Exit Win2K Mode' : '[ Win2K Mode ]';
+            $('win95-toggle').textContent = on ? 'Exit Windows XP Mode' : 'Windows XP Mode';
         });
 
         /* Remote scrubber drag */
