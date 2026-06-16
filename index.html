@@ -152,20 +152,44 @@
             align-items: center;
             gap: 10px;
         }
-        .input-cd-toggle {
-            padding: 4px 14px;
+        .cd-adj-btn {
+            width: 28px; height: 28px;
             background: #131313;
             border: 1px solid #252525;
             border-radius: 5px;
+            color: #aaa;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+        .cd-adj-btn:hover { background: #1d1d1d; color: #fff; }
+        #input-cd-val {
+            min-width: 28px;
+            text-align: center;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        #paste-btn {
+            align-self: flex-end;
+            margin-top: 6px;
+            padding: 6px 16px;
+            background: #131313;
+            border: 1px solid #252525;
+            border-radius: 6px;
             color: #666;
             font-family: Arial, sans-serif;
             font-size: 0.75rem;
             letter-spacing: 1px;
-            text-transform: uppercase;
             cursor: pointer;
             transition: background 0.12s, color 0.12s, border-color 0.12s;
+            width: min(820px, 100%);
         }
-        .input-cd-toggle.on { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+        #paste-btn:hover { background: #1a1a1a; color: #ccc; border-color: #333; }
 
         /* Remote connect row on input screen */
         .remote-row-input {
@@ -795,13 +819,14 @@
 
         <div class="input-cd-row">
             <span class="color-picker-lbl">Countdown</span>
-            <button id="input-cd-btn" class="input-cd-toggle on">On</button>
+            <button id="input-cd-dn" class="cd-adj-btn">−</button>
+            <span id="input-cd-val">5s</span>
+            <button id="input-cd-up" class="cd-adj-btn">+</button>
         </div>
     </div>
 
-    <textarea id="script-input" placeholder="Paste your script here…
-Text scrolls automatically at your chosen speed.
-SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textarea>
+    <textarea id="script-input" placeholder="Paste your script here…"></textarea>
+    <button id="paste-btn">⎘ Paste from clipboard</button>
 
     <button id="start-btn">▶ Presentation Mode</button>
 
@@ -1023,7 +1048,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     let rotated  = true;
     let rDrag = false, rX0, rY0, rW0, rH0;
     let cdTimeout  = null;
-    let cdEnabled  = true;
+    let cdSeconds  = 5;
 
     const $ = id => document.getElementById(id);
     const inputScr = $('input-screen');
@@ -1074,7 +1099,14 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     $('sz-dn').addEventListener('click', () => setFontSize(fontSize - SZ_STEP));
     $('mirror-btn').addEventListener('click', toggleMirror);
     $('cd-toggle-btn').addEventListener('click', toggleCd);
-    $('input-cd-btn').addEventListener('click', toggleCd);
+    $('input-cd-dn').addEventListener('click', () => setCdSeconds(cdSeconds - 1));
+    $('input-cd-up').addEventListener('click', () => setCdSeconds(cdSeconds + 1));
+    $('paste-btn').addEventListener('click', () => {
+        navigator.clipboard.readText().then(text => {
+            textarea.value = text;
+            textarea.focus();
+        }).catch(() => { textarea.focus(); document.execCommand('paste'); });
+    });
     $('rotate-btn').addEventListener('click', toggleRotate);
     document.querySelectorAll('.spd-btn').forEach(b =>
         b.addEventListener('click', () => setSpeed(+b.dataset.s))
@@ -1103,7 +1135,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
             render();
             syncPP();
             startRaf();
-            if (cdEnabled) startCountdown(); else { playing = true; lastTs = null; syncPP(); }
+            if (cdSeconds > 0) startCountdown(); else { playing = true; lastTs = null; syncPP(); }
         }));
     }
 
@@ -1116,7 +1148,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
 
     function startCountdown() {
         syncCdTransform();
-        let n = 5;
+        let n = cdSeconds;
         cdNum.textContent = n;
         cdOverlay.classList.add('active');
         function tick() {
@@ -1214,7 +1246,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
     }
 
     function togglePlay() {
-        if (!playing && cdEnabled) {
+        if (!playing && cdSeconds > 0) {
             cancelCountdown();
             startCountdown();
             return;
@@ -1256,15 +1288,18 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
         if (broadcastState) broadcastState();
     }
 
-    function toggleCd() {
-        cdEnabled = !cdEnabled;
+    function setCdSeconds(n) {
+        cdSeconds = Math.max(0, Math.min(5, n));
+        const label = cdSeconds === 0 ? 'Off' : cdSeconds + 's';
+        $('input-cd-val').textContent = label;
         const btn = $('cd-toggle-btn');
-        btn.textContent = cdEnabled ? 'On' : 'Off';
-        btn.classList.toggle('on', cdEnabled);
-        const ibtn = $('input-cd-btn');
-        ibtn.textContent = cdEnabled ? 'On' : 'Off';
-        ibtn.classList.toggle('on', cdEnabled);
+        btn.textContent = label;
+        btn.classList.toggle('on', cdSeconds > 0);
         if (broadcastState) broadcastState();
+    }
+
+    function toggleCd() {
+        setCdSeconds(cdSeconds > 0 ? 0 : 5);
     }
 
     function setFontSize(sz) {
@@ -1465,9 +1500,13 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 }
 
                 /* Toggle buttons */
-                if (d.mirrored  != null) $('remote-mirror').classList.toggle('on', d.mirrored);
-                if (d.rotated   != null) $('remote-rotate').classList.toggle('on', d.rotated);
-                if (d.cdEnabled != null) $('remote-countdown').classList.toggle('on', d.cdEnabled);
+                if (d.mirrored   != null) $('remote-mirror').classList.toggle('on', d.mirrored);
+                if (d.rotated    != null) $('remote-rotate').classList.toggle('on', d.rotated);
+                if (d.cdSeconds  != null) {
+                    const cdBtn = $('remote-countdown');
+                    cdBtn.textContent = d.cdSeconds === 0 ? 'Countdown: Off' : 'Countdown: ' + d.cdSeconds + 's';
+                    cdBtn.classList.toggle('on', d.cdSeconds > 0);
+                }
 
                 /* Duration scrubber */
                 if (d.progress != null) {
@@ -1548,7 +1587,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                 'tp/' + sessionId + '/state',
                 JSON.stringify({
                     type: 'state',
-                    playing, speed, fontSize, mirrored, rotated, cdEnabled,
+                    playing, speed, fontSize, mirrored, rotated, cdSeconds,
                     progress:  pct,
                     elapsed:   fmt(elapsedSec),
                     remaining: fmt(Math.max(0, totalSec - elapsedSec)),
@@ -1609,7 +1648,7 @@ SPACE  play / pause   ·   ↑ ↓  navigate   ·   1 – 5  set speed"></textar
                     if (d.cmd === 'fontSize')    setFontSize(fontSize + d.delta);
                     if (d.cmd === 'toggleMirror') toggleMirror();
                     if (d.cmd === 'toggleRotate') toggleRotate();
-                    if (d.cmd === 'toggleCd')    toggleCd();
+                    if (d.cmd === 'toggleCd')    setCdSeconds(cdSeconds > 0 ? 0 : 5);
                     if (d.cmd === 'scrubTo') {
                         scroll = d.pct * tpText.scrollHeight;
                         lastTs = null;
