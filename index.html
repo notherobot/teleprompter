@@ -981,7 +981,9 @@
             <button class="r-toggle on" id="remote-rotate">Rotate</button>
         </div>
         <div class="r-row">
-            <button class="r-toggle on" id="remote-countdown">Countdown</button>
+            <button class="r-btn" id="remote-cd-dn">−</button>
+            <button class="r-toggle on" id="remote-countdown">Countdown: 3s</button>
+            <button class="r-btn" id="remote-cd-up">+</button>
         </div>
     </div>
 
@@ -1525,10 +1527,12 @@
                 /* Toggle buttons */
                 if (d.mirrored   != null) $('remote-mirror').classList.toggle('on', d.mirrored);
                 if (d.rotated    != null) $('remote-rotate').classList.toggle('on', d.rotated);
-                if (d.cdSeconds  != null) {
+                if (d.cdSeconds != null) {
                     const cdBtn = $('remote-countdown');
                     cdBtn.textContent = d.cdSeconds === 0 ? 'Countdown: Off' : 'Countdown: ' + d.cdSeconds + 's';
                     cdBtn.classList.toggle('on', d.cdSeconds > 0);
+                    $('remote-cd-dn').disabled = d.cdSeconds <= 0;
+                    $('remote-cd-up').disabled = d.cdSeconds >= 5;
                 }
 
                 /* Duration scrubber */
@@ -1565,6 +1569,8 @@
         $('remote-mirror').addEventListener('click',    () => sendCmd({ cmd: 'toggleMirror' }));
         $('remote-rotate').addEventListener('click',    () => sendCmd({ cmd: 'toggleRotate' }));
         $('remote-countdown').addEventListener('click', () => sendCmd({ cmd: 'toggleCd' }));
+        $('remote-cd-dn').addEventListener('click', () => sendCmd({ cmd: 'setCd', delta: -1 }));
+        $('remote-cd-up').addEventListener('click', () => sendCmd({ cmd: 'setCd', delta:  1 }));
 
         /* Remote scrubber drag */
         const rScrubTrack = $('remote-scrub-track');
@@ -1695,7 +1701,8 @@
                     if (d.cmd === 'fontSize')    setFontSize(fontSize + d.delta);
                     if (d.cmd === 'toggleMirror') toggleMirror();
                     if (d.cmd === 'toggleRotate') toggleRotate();
-                    if (d.cmd === 'toggleCd')    setCdSeconds(cdSeconds > 0 ? 0 : 5);
+                    if (d.cmd === 'toggleCd') setCdSeconds(cdSeconds > 0 ? 0 : 5);
+                    if (d.cmd === 'setCd')    setCdSeconds(cdSeconds + d.delta);
                     if (d.cmd === 'scrubTo') {
                         scroll = d.pct * tpText.scrollHeight;
                         lastTs = null;
